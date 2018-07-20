@@ -7,9 +7,7 @@ import java.io.File
 
 fun main(args: Array<String>) {
     val config = LwjglApplicationConfiguration().apply { forceExit = false }
-    val engine = VoxelEngine()
-    val m = Model.parse(File("problemsL/LA001_tgt.mdl"))
-    println(m)
-    engine.setModel(m)
+    val model = Model.parse(File("problemsL/LA001_tgt.mdl"))
+    val engine = VoxelEngine(model)
     LwjglApplication(engine, config)
 }
