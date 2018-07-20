@@ -1,8 +1,17 @@
 package lambdallama.github.io
 
 class State {
+    companion object {
+        enum class Harmonics {
+            Low,
+            High,
+        }
+    }
+
     private val traceListeners: ArrayList<TraceListener> = ArrayList()
 
+    var harmonics: Harmonics = Harmonics.Low
+        private set
     var energy: Long = 0
         private set
 
@@ -14,7 +23,13 @@ class State {
 
     /* General public methods */
 
-    fun loadFrom(/* */) { }
+    fun loadFrom(/* */) {
+        // TODO: check if below is correct
+        harmonics = Harmonics.Low
+        energy = 0
+
+        // TODO: load
+    }
 
     fun addTraceListener(traceListener: TraceListener) {
         traceListeners.add(traceListener)
@@ -38,7 +53,7 @@ class State {
     }
 
     fun flip(bot: Int) {
-        // TODO: action
+        harmonics = if (harmonics == Harmonics.Low) Harmonics.High else Harmonics.Low
 
         for (listener in traceListeners) {
             listener.onFlip(this, bot)
