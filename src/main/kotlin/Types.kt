@@ -7,16 +7,38 @@ import java.nio.ByteBuffer
 import java.util.*
 import kotlin.experimental.inv
 import kotlin.math.abs
+import kotlin.math.max
 
 
 data class Coord(val x: Int, val y: Int, val z: Int) {
+    companion object {
+        val ZERO = Coord(0, 0, 0)
+    }
+
+    val volume: Int get() = x * y * z
+
+    fun isInBounds(bounds: Coord): Boolean {
+        return x < bounds.x && y < bounds.y && z < bounds.z
+    }
+
     operator fun plus(delta: DeltaCoord): Coord {
         return Coord(x + delta.dx, y + delta.dy, z + delta.dz)
+    }
+
+    operator fun minus(coord: Coord): DeltaCoord {
+        return DeltaCoord(x - coord.x, y - coord.y, z - coord.z)
     }
 }
 
 data class DeltaCoord(val dx: Int, val dy: Int, val dz: Int) {
     val mlen: Int get() = abs(dx) + abs(dy) + abs(dz)
+    val clen: Int get() = max(max(abs(dx), abs(dy)), abs(dz))
+
+    val isLinear: Boolean get() = ((dx != 0) xor (dy != 0) xor (dz != 0)) &&
+            ((dx == 0) || (dy == 0) || (dz == 0))
+    val isShortLinear: Boolean get() = isLinear && mlen <= 5
+    val isLongLinear: Boolean get() = isLinear && mlen <= 15
+    val isNear: Boolean get() = mlen in 1..2 && clen == 1
 }
 
 data class Matrix(val R: Int, val coordinates: ByteArray) {

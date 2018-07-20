@@ -10,6 +10,10 @@ class State {
 
     private val traceListeners: ArrayList<TraceListener> = ArrayList()
 
+    private val bots: HashMap<Int, Bot> = HashMap()
+    private val actedBots: HashSet<Int> = HashSet()
+    private var expectedBotActionsThisStep: Int = 0
+    var resolution: Coord = Coord.ZERO
     var harmonics: Harmonics = Harmonics.Low
         private set
     var energy: Long = 0
@@ -29,93 +33,158 @@ class State {
         energy = 0
 
         // TODO: load
+
+        expectedBotActionsThisStep = bots.count()
     }
 
     fun addTraceListener(traceListener: TraceListener) {
         traceListeners.add(traceListener)
     }
 
+    fun botIds(): Sequence<Int> {
+        return bots.keys.asSequence()
+    }
+
+    fun getBot(id: Int): BotView {
+        return bots[id] as BotView
+    }
+
     /* Commands */
-    fun halt(bot: Int) {
-        // TODO: action
+    fun halt(id: Int) {
+        assert(bots.contains(id))
+        assert(bots.count() == 1)
+        val bot = bots[id]!!
+        assert(bot.pos == Coord.ZERO)
+        assert(harmonics == Harmonics.Low)
+
+        bots.remove(id)
+        actedBots.add(id)
 
         for (listener in traceListeners) {
-            listener.onHalt(this, bot)
+            listener.onHalt(this, id)
         }
     }
 
-    fun wait(bot: Int) {
-        // TODO: action
+    fun wait(id: Int) {
+        assert(bots.contains(id))
+
+        actedBots.add(id)
 
         for (listener in traceListeners) {
-            listener.onWait(this, bot)
+            listener.onWait(this, id)
         }
     }
 
-    fun flip(bot: Int) {
+    fun flip(id: Int) {
+        assert(bots.contains(id))
+
         harmonics = if (harmonics == Harmonics.Low) Harmonics.High else Harmonics.Low
+        actedBots.add(id)
 
         for (listener in traceListeners) {
-            listener.onFlip(this, bot)
+            listener.onFlip(this, id)
         }
     }
 
-    fun sMove(bot: Int, dx: Int, dy: Int, dz: Int) {
-        energy += 2 * mlen(dx, dy, dz)
+    fun sMove(id: Int, delta: DeltaCoord) {
+        assert(bots.contains(id))
+        assert(delta.isLongLinear)
+        val bot = bots[id]!!
+        val oldPos = bot.pos
+        val newPos = oldPos + delta
+        assert(newPos.isInBounds(resolution))
+        // TODO: assert region
 
-        // TODO: action
+        bot.pos = newPos
+        energy += 2 * delta.mlen
+        actedBots.add(id)
 
         for (listener in traceListeners) {
-            listener.onSMove(this, bot, dx, dy, dz)
+            listener.onSMove(this, id, oldPos)
         }
     }
 
-    fun lMove(bot: Int, dx0: Int, dy0: Int, dz0: Int, dx1: Int, dy1: Int, dz1: Int) {
-        energy += 2 * (mlen(dx0, dy0, dz0) + 2 + mlen(dx1, dy1, dz1))
+    fun lMove(id: Int, delta0: DeltaCoord, delta1: DeltaCoord) {
+        assert(bots.contains(id))
+        assert(delta0.isShortLinear)
+        assert(delta1.isShortLinear)
+        val bot = bots[id]!!
+        val oldPos = bot.pos
+        val midPos = oldPos + delta0
+        val newPos = midPos + delta1
+        assert(midPos.isInBounds(resolution))
+        assert(newPos.isInBounds(resolution))
+        // TODO: assert region
 
-        // TODO: action
+        bot.pos = newPos
+        energy += 2 * (delta0.mlen + 2 + delta1.mlen)
+        actedBots.add(id)
 
         for (listener in traceListeners) {
-            listener.onLMove(this, bot, dx0, dy0, dz0, dx1, dy1, dz1)
+            listener.onLMove(this, id, oldPos, midPos)
         }
     }
 
-    fun fill(bot: Int, dx: Int, dy: Int, dz: Int) {
+    fun fill(id: Int, delta: DeltaCoord) {
+        assert(bots.contains(id))
+        assert(delta.isNear)
+        val bot = bots[id]!!
+        val fillPos = bot.pos + delta
+        assert(fillPos.isInBounds(resolution))
+
+        // TODO: fill in voxel
         // TODO: check if full, add only 6 in that case
         energy += 12
-
-        // TODO: action
+        actedBots.add(id)
 
         for (listener in traceListeners) {
-            listener.onFill(this, bot, dx, dy, dz)
+            listener.onFill(this, id, fillPos)
         }
     }
 
-    fun fission(bot: Int, dx: Int, dy: Int, dz: Int, m: Int) {
+    fun fission(id: Int, delta: DeltaCoord, m: Int) {
+        assert(bots.contains(id))
+        assert(delta.isNear)
+        val bot = bots[id]!!
+        val newBotPos = bot.pos + delta
+        assert(newBotPos.isInBounds(resolution))
+        // TODO: check that new position is not Full
+        // TODO: assert m
+
+        // TODO: action
         energy += 24
-
-        // TODO: action
+        actedBots.add(id)
 
         for (listener in traceListeners) {
-            listener.onFission(this, bot, dx, dy, dz, m)
+            listener.onFission(this, id, m)
         }
     }
 
-    fun fusion(pBot: Int, sBot: Int) {
-        energy -= 24
+    fun fusion(pId: Int, sId: Int) {
+        assert(bots.contains(pId))
+        assert(bots.contains(sId))
+        val pBot = bots[pId]!!
+        val sBot = bots[sId]!!
+        val sPos = sBot.pos
+        assert((pBot.pos - sBot.pos).isNear)
 
         // TODO: action
+        energy -= 24
+        actedBots.add(pId)
+        actedBots.add(sId)
 
         for (listener in traceListeners) {
             // TODO: supply pBot/sBot coords
-            listener.onFusion(this, pBot, sBot, 0, 0, 0 ,0 ,0 ,0)
+            listener.onFusion(this, pId, sId, sPos)
         }
     }
 
     fun step() {
-        // TODO: change energy
+        assert(actedBots.count() == expectedBotActionsThisStep)
 
-        // TODO: action
+        expectedBotActionsThisStep = bots.count()
+        actedBots.clear()
+        energy += if (harmonics == Harmonics.High) 30 * resolution.volume else 3 * resolution.volume
 
         for (listener in traceListeners) {
             listener.onStep()
