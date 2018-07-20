@@ -12,8 +12,8 @@ import kotlin.math.max
 data class Coord(val x: Int, val y: Int, val z: Int) {
     val volume: Int get() = x * y * z
 
-    fun isInBounds(bounds: Coord): Boolean {
-        return x < bounds.x && y < bounds.y && z < bounds.z
+    fun isInBounds(R: Int): Boolean {
+        return x in 0 until R && y in 0 until R && z in 0 until R
     }
 
     operator fun plus(delta: DeltaCoord): Coord {
@@ -101,12 +101,11 @@ data class Matrix(val R: Int, val coordinates: ByteArray) {
             q.add(initial)
             while (q.isNotEmpty()) {
                 val c = q.pop()
-                seen[c.x, c.y, c.z] = true
+                seen[c] = true
 
                 for (dxdydz in DXDYDZ_MLEN1) {
                     val n = c + dxdydz
-                    if (n.x in 0..(R - 1) && n.y in 0..(R - 1) && n.z in 0..(R - 1)
-                        && this[n.x, n.y, n.z] && !seen[n.x, n.y, n.z]) {
+                    if (n.isInBounds(R) && this[n] && !seen[n]) {
                         q.add(n)
                     }
                 }
@@ -114,7 +113,7 @@ data class Matrix(val R: Int, val coordinates: ByteArray) {
         }
 
         // y == 0 i.e. start from the ground.
-        val seen = copy(coordinates = ByteArray(coordinates.size))
+        val seen = zerosLike(this)
         for (x in 0 until R) {
             for (z in 0 until R) {
                 if (this[x, 0, z] && !seen[x, 0, z]) {
@@ -134,6 +133,10 @@ data class Matrix(val R: Int, val coordinates: ByteArray) {
             DeltaCoord(0, 0, -1),
             DeltaCoord(0, -1, 0),
             DeltaCoord(-1, 0, 0))
+
+        fun zerosLike(other: Matrix): Matrix {
+            return other.copy(coordinates = ByteArray(other.coordinates.size))
+        }
     }
 }
 

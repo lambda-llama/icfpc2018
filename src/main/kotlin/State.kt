@@ -1,9 +1,11 @@
 package io.github.lambdallama
 
-class State(val matrix: Matrix) {
+class State(
+    val matrix: Matrix,
+    val bots: MutableMap<Int, Bot>
+) {
     private val traceListeners: ArrayList<TraceListener> = ArrayList()
 
-    private val bots: HashMap<Int, Bot> = HashMap()
     private val actedBots: HashSet<Int> = HashSet()
     private var expectedBotActionsThisStep: Int = 0
     var resolution: Coord = Coord.ZERO
@@ -15,20 +17,6 @@ class State(val matrix: Matrix) {
     /* Private methods */
 
     /* General public methods */
-
-    fun loadFrom(/* */) {
-        // TODO: check if below is correct
-        harmonics = Harmonics.Low
-        energy = 0
-
-        // TODO: load
-        bots.clear()
-        bots[1] = Bot(1, Coord.ZERO, (2..20).toSortedSet())
-
-        expectedBotActionsThisStep = bots.count()
-        actedBots.clear()
-    }
-
     fun addTraceListener(traceListener: TraceListener) {
         traceListeners.add(traceListener)
     }
@@ -84,7 +72,7 @@ class State(val matrix: Matrix) {
         val bot = bots[id]!!
         val oldPos = bot.pos
         val newPos = oldPos + delta
-        assert(newPos.isInBounds(resolution))
+        assert(newPos.isInBounds(matrix.R))
 
         matrix.forEach(oldPos, newPos) { x, y, z -> assert(!matrix[x, y, z]) }
 
@@ -105,8 +93,8 @@ class State(val matrix: Matrix) {
         val oldPos = bot.pos
         val midPos = oldPos + delta0
         val newPos = midPos + delta1
-        assert(midPos.isInBounds(resolution))
-        assert(newPos.isInBounds(resolution))
+        assert(midPos.isInBounds(matrix.R))
+        assert(newPos.isInBounds(matrix.R))
 
         matrix.forEach(oldPos, midPos) { x, y, z -> assert(!matrix[x, y, z]) }
         matrix.forEach(midPos, newPos) { x, y, z -> assert(!matrix[x, y, z]) }
@@ -125,7 +113,7 @@ class State(val matrix: Matrix) {
         assert(delta.isNear)
         val bot = bots[id]!!
         val fillPos = bot.pos + delta
-        assert(fillPos.isInBounds(resolution))
+        assert(fillPos.isInBounds(matrix.R))
 
         if (matrix[fillPos]) {
             energy += 6
@@ -147,7 +135,7 @@ class State(val matrix: Matrix) {
         val bot = bots[id]!!
         assert(bot.seeds.any())
         val newBotPos = bot.pos + delta
-        assert(newBotPos.isInBounds(resolution))
+        assert(newBotPos.isInBounds(matrix.R))
         assert(!matrix[newBotPos])
         assert(m < bot.seeds.count())
 
@@ -196,6 +184,15 @@ class State(val matrix: Matrix) {
 
         for (listener in traceListeners) {
             listener.onStep()
+        }
+    }
+
+    companion object {
+        fun forModel(model: Model): State {
+            // TODO: use the model matrix?
+            return State(
+                Matrix.zerosLike(model.matrix),
+                mutableMapOf(1 to Bot(1, Coord.ZERO, (2..20).toSortedSet())))
         }
     }
 }
