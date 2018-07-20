@@ -1,13 +1,6 @@
 package io.github.lambdallama
 
-class State {
-    companion object {
-        enum class Harmonics {
-            Low,
-            High,
-        }
-    }
-
+class State(val matrix: Matrix) {
     private val traceListeners: ArrayList<TraceListener> = ArrayList()
 
     private val bots: HashMap<Int, Bot> = HashMap()
@@ -77,7 +70,7 @@ class State {
     fun flip(id: Int) {
         assert(bots.contains(id))
 
-        harmonics = if (harmonics == Harmonics.Low) Harmonics.High else Harmonics.Low
+        harmonics = harmonics.flip()
         actedBots.add(id)
 
         for (listener in traceListeners) {
@@ -92,7 +85,8 @@ class State {
         val oldPos = bot.pos
         val newPos = oldPos + delta
         assert(newPos.isInBounds(resolution))
-        // TODO: assert region
+
+        matrix.forEach(oldPos, newPos) { x, y, z -> assert(!matrix[x, y, z]) }
 
         bot.pos = newPos
         energy += 2 * delta.mlen
@@ -113,7 +107,9 @@ class State {
         val newPos = midPos + delta1
         assert(midPos.isInBounds(resolution))
         assert(newPos.isInBounds(resolution))
-        // TODO: assert region
+
+        matrix.forEach(oldPos, midPos) { x, y, z -> assert(!matrix[x, y, z]) }
+        matrix.forEach(midPos, newPos) { x, y, z -> assert(!matrix[x, y, z]) }
 
         bot.pos = newPos
         energy += 2 * (delta0.mlen + 2 + delta1.mlen)
@@ -131,9 +127,13 @@ class State {
         val fillPos = bot.pos + delta
         assert(fillPos.isInBounds(resolution))
 
-        // TODO: fill in voxel
-        // TODO: check if full, add only 6 in that case
-        energy += 12
+        if (matrix[fillPos]) {
+            energy += 6
+        } else {
+            matrix[fillPos] = true
+            energy += 12
+        }
+
         actedBots.add(id)
 
         for (listener in traceListeners) {
@@ -148,7 +148,7 @@ class State {
         assert(bot.seeds.any())
         val newBotPos = bot.pos + delta
         assert(newBotPos.isInBounds(resolution))
-        // TODO: check that new position is not Full
+        assert(!matrix[newBotPos])
         assert(m < bot.seeds.count())
 
         val split = bot.seeds.elementAt(m) + 1
@@ -197,5 +197,15 @@ class State {
         for (listener in traceListeners) {
             listener.onStep()
         }
+    }
+}
+
+enum class Harmonics {
+    Low,
+    High;
+
+    fun flip(): Harmonics = when (this) {
+        Low -> High
+        High -> Low
     }
 }

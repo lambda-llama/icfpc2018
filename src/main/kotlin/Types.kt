@@ -5,16 +5,11 @@ import java.io.File
 import java.math.RoundingMode
 import java.nio.ByteBuffer
 import java.util.*
-import kotlin.experimental.inv
 import kotlin.math.abs
 import kotlin.math.max
 
 
 data class Coord(val x: Int, val y: Int, val z: Int) {
-    companion object {
-        val ZERO = Coord(0, 0, 0)
-    }
-
     val volume: Int get() = x * y * z
 
     fun isInBounds(bounds: Coord): Boolean {
@@ -27,6 +22,10 @@ data class Coord(val x: Int, val y: Int, val z: Int) {
 
     operator fun minus(coord: Coord): DeltaCoord {
         return DeltaCoord(x - coord.x, y - coord.y, z - coord.z)
+    }
+
+    companion object {
+        val ZERO = Coord(0, 0, 0)
     }
 }
 
@@ -42,12 +41,25 @@ data class DeltaCoord(val dx: Int, val dy: Int, val dz: Int) {
 }
 
 data class Matrix(val R: Int, val coordinates: ByteArray) {
-    /** Returns true if the voxel at a given coordinate is Full. */
+    inline fun forEach(from: Coord, to: Coord, block: (Int, Int, Int) -> Unit) {
+        for (x in from.x..to.x) {
+            for (y in from.y..to.y) {
+                for (z in from.z..to.z) {
+                    block(x, y, z)
+                }
+            }
+        }
+    }
+
+    operator fun get(c: Coord): Boolean = get(c.x, c.y, c.z)
+
     operator fun get(x: Int, y: Int, z: Int): Boolean {
         val offset = x * R * R + y * R + z
         val b = coordinates[offset / 8].toInt() and 0xff
         return b and (1 shl (offset % 8)) != 0
     }
+
+    operator fun set(c: Coord, value: Boolean) = set(c.x, c.y, c.z, value)
 
     operator fun set(x: Int, y: Int, z: Int, value: Boolean) {
         val offset = x * R * R + y * R + z
