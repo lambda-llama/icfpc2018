@@ -25,5 +25,5 @@ dependencies {
 }
 
 application {
-    mainClassName = "MainKt"
+    mainClassName = "io.github.lambdallama.MainKt"
 }
