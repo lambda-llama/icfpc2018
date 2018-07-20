@@ -4,7 +4,7 @@ plugins {
 }
 
 application {
-    mainClassName = "lambdallama.github.io.MainKt"
+    mainClassName = "MainKt"
 }
 val gdxVersion = "1.9.4"
 dependencies {
