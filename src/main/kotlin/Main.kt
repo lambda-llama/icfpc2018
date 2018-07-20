@@ -1,4 +1,4 @@
-package lambdallama.github.io
+package io.github.lambdallama
 
 import khttp.get
 import khttp.structures.authorization.BasicAuthorization
