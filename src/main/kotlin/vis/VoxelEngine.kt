@@ -1,4 +1,4 @@
-package vis
+package io.github.lambdallama.vis
 
 import com.badlogic.gdx.ApplicationAdapter
 import com.badlogic.gdx.Gdx
