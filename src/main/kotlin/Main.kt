@@ -1,8 +1,6 @@
 import com.badlogic.gdx.backends.lwjgl.LwjglApplication
 import com.badlogic.gdx.backends.lwjgl.LwjglApplicationConfiguration
-import com.brzez.voxelengine.VoxelEngine
-import khttp.get
-import khttp.structures.authorization.BasicAuthorization
+import vis.VoxelEngine
 
 fun main(args: Array<String>) {
     val config = LwjglApplicationConfiguration().apply { forceExit = false }
