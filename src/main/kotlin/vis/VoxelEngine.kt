@@ -51,6 +51,14 @@ class VoxelEngine(private val model: io.github.lambdallama.Model) : ApplicationA
         val speed = 2f
         val instance = instance
         if (instance != null) {
+            if (Gdx.input.isKeyPressed(Input.Keys.EQUALS)) {
+                instance.transform.scale(1.1f, 1.1f, 1.1f)
+            }
+
+            if (Gdx.input.isKeyPressed(Input.Keys.MINUS)) {
+                instance.transform.scale(0.9f, 0.9f, 0.9f)
+            }
+
             if (Gdx.input.isKeyPressed(Input.Keys.RIGHT)) {
                 instance.transform.rotate(0f, 1f, 0f, speed)
             }
