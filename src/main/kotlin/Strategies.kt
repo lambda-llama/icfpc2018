@@ -49,5 +49,6 @@ fun baseline(model: Model): Sequence<State> = buildSequence {
     state.flip(b.id)
     state.step()
     state.multiSMove(b, Coord.ZERO)
+    state.halt(b.id)
     yield(state)
 }

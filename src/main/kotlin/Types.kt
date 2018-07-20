@@ -59,7 +59,7 @@ data class DeltaCoord(val dx: Int, val dy: Int, val dz: Int) : Comparable<DeltaC
 data class Matrix(val R: Int, val coordinates: ByteArray) {
     inline fun forEach(
         from: Coord = Coord(0, 0, 0),
-        to: Coord = Coord(R, R, R),
+        to: Coord = Coord(R - 1, R - 1, R - 1),
         block: (Int, Int, Int) -> Unit
     ) {
         for (x in from.x..to.x) {

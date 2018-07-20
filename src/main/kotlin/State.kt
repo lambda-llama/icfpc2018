@@ -8,7 +8,6 @@ class State(
 
     private val botCommands: HashMap<Int, Command> = HashMap()
     private var expectedBotActionsThisStep: Int = bots.count()
-    var resolution: Coord = Coord.ZERO
     var harmonics: Harmonics = Harmonics.Low
         private set
     var energy: Long = 0
@@ -146,7 +145,8 @@ class State(
     fun step() {
         assert(botCommands.count() == expectedBotActionsThisStep)
 
-        energy += if (harmonics == Harmonics.High) 30 * resolution.volume else 3 * resolution.volume
+        val volume = matrix.R * matrix.R * matrix.R
+        energy += (if (harmonics == Harmonics.High) 30 else 3) * volume
         energy += 24 * expectedBotActionsThisStep
 
         expectedBotActionsThisStep = bots.count()

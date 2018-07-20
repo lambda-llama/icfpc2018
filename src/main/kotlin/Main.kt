@@ -16,10 +16,14 @@ fun main(args: Array<String>) {
     val model = Model.parse(File("problemsL/LA017_tgt.mdl"))
     val engine = VoxelEngine(model)
     thread {
+        var last: State? = null
         for (state in baseline(model)) {
             engine.updateModel(model.copy(matrix = state.matrix))
             Thread.sleep(300)
+            last = state
         }
+
+        println("Total energy: " + last!!.energy)
     }
     LwjglApplication(engine, config)
 }
