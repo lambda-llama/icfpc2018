@@ -9,6 +9,7 @@ application {
 
 dependencies {
     compile(kotlin("stdlib"))
+    compile("khttp:khttp:0.1.0")
     testCompile("junit:junit:4.12")
 }
 
