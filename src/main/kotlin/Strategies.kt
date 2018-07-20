@@ -18,9 +18,10 @@ fun State.multiSMove(b: BotView, target: Coord) {
     }
 }
 
-class Baseline : Strategy {
-    override fun run(model: Model): Sequence<State> = buildSequence {
-        val state = State.forModel(model)
+class Baseline(val model: Model) : Strategy {
+    override val state: State = State.forModel(model)
+
+    override fun run(): Sequence<State> = buildSequence {
         val (minCoord, maxCoord) = model.bbox
         val b = state.getBot(1)
 
@@ -51,6 +52,7 @@ class Baseline : Strategy {
         state.step()
         state.multiSMove(b, Coord.ZERO)
         state.halt(b.id)
+        state.step()
         yield(state)
     }
 }

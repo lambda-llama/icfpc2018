@@ -1,5 +1,7 @@
 package io.github.lambdallama
 
 interface Strategy {
-    fun run(model: Model): Sequence<State>
+    val state: State
+
+    fun run(): Sequence<State>
 }

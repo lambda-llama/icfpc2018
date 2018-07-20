@@ -46,7 +46,10 @@ class TraceWriter(val stream: DataOutputStream) : TraceListener {
         for (pair in commands) {
             val command = pair.value
             when (command) {
-                is Halt -> stream.writeByte(HALT)
+                is Halt -> {
+                    stream.writeByte(HALT)
+                    stream.flush()
+                }
                 is Wait -> stream.writeByte(WAIT)
                 is Flip -> stream.writeByte(FLIP)
                 is SMove -> {
