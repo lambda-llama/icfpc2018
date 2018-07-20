@@ -7,12 +7,14 @@ import kotlin.experimental.inv
 import kotlin.math.abs
 
 
-data class Voxel(val x: Int, val y: Int, val z: Int) {
-    val mlen: Int get() = abs(x) + abs(y) + abs(z)
-
-    operator fun plus(other: Voxel): Voxel {
-        return Voxel(x + other.x, y + other.y, z + other.z)
+data class Coord(val x: Int, val y: Int, val z: Int) {
+    operator fun plus(delta: DeltaCoord): Coord {
+        return Coord(x + delta.dx, y + delta.dy, z + delta.dz)
     }
+}
+
+data class DeltaCoord(val dx: Int, val dy: Int, val dz: Int) {
+    val mlen: Int get() = abs(dx) + abs(dy) + abs(dz)
 }
 
 data class Matrix(val R: Int, val coordinates: ByteArray) {
@@ -58,8 +60,8 @@ data class Matrix(val R: Int, val coordinates: ByteArray) {
             }
         }
 
-        fun go(initial: Voxel, seen: Matrix) {
-            val q = ArrayDeque<Voxel>()
+        fun go(initial: Coord, seen: Matrix) {
+            val q = ArrayDeque<Coord>()
             q.add(initial)
             while (q.isNotEmpty()) {
                 val c = q.pop()
@@ -81,7 +83,7 @@ data class Matrix(val R: Int, val coordinates: ByteArray) {
         for (x in 0 until R) {
             for (z in 0 until R) {
                 if (this[x, 0, z] && !seen[x, 0, z]) {
-                    go(Voxel(x, 0, z), seen)
+                    go(Coord(x, 0, z), seen)
                 }
             }
         }
@@ -90,13 +92,13 @@ data class Matrix(val R: Int, val coordinates: ByteArray) {
     }
 
     companion object {
-        val DXDYDZ_MLEN1: Array<Voxel> = arrayOf(
-            Voxel(0, 0, 1),
-            Voxel(0, 1, 0),
-            Voxel(1, 0, 0),
-            Voxel(0, 0, -1),
-            Voxel(0, -1, 0),
-            Voxel(-1, 0, 0))
+        val DXDYDZ_MLEN1: Array<DeltaCoord> = arrayOf(
+            DeltaCoord(0, 0, 1),
+            DeltaCoord(0, 1, 0),
+            DeltaCoord(1, 0, 0),
+            DeltaCoord(0, 0, -1),
+            DeltaCoord(0, -1, 0),
+            DeltaCoord(-1, 0, 0))
     }
 }
 
