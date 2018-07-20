@@ -13,8 +13,10 @@ import java.io.File
 
 class VoxelEngine(private val model: io.github.lambdallama.Model) : ApplicationAdapter() {
     lateinit var camera: PerspectiveCamera
-    var chunkModel: Model? = null
-    var instance: ModelInstance? = null
+    private var chunkModel: Model? = null
+    private var instance: ModelInstance? = null
+    lateinit var floorModel: Model
+    lateinit var floorInstance: ModelInstance
     lateinit var modelBatch: ModelBatch
     lateinit var environment: Environment
 
@@ -34,6 +36,9 @@ class VoxelEngine(private val model: io.github.lambdallama.Model) : ApplicationA
 
         chunkModel = model.toVisModel()
         instance = ModelInstance(chunkModel)
+
+        floorModel = vis.floorModel()
+        floorInstance = ModelInstance(floorModel)
     }
 
     override fun render() {
@@ -44,6 +49,7 @@ class VoxelEngine(private val model: io.github.lambdallama.Model) : ApplicationA
 
         modelBatch.begin(camera)
         instance?.let { modelBatch.render(it, environment) }
+        modelBatch.render(floorInstance, environment)
         modelBatch.end()
     }
 
@@ -53,28 +59,35 @@ class VoxelEngine(private val model: io.github.lambdallama.Model) : ApplicationA
         if (instance != null) {
             if (Gdx.input.isKeyPressed(Input.Keys.EQUALS)) {
                 instance.transform.scale(1.1f, 1.1f, 1.1f)
+                floorInstance.transform.scale(1.1f, 1.1f, 1.1f)
             }
 
             if (Gdx.input.isKeyPressed(Input.Keys.MINUS)) {
                 instance.transform.scale(0.9f, 0.9f, 0.9f)
+                floorInstance.transform.scale(0.9f, 0.9f, 0.9f)
             }
 
             if (Gdx.input.isKeyPressed(Input.Keys.RIGHT)) {
                 instance.transform.rotate(0f, 1f, 0f, speed)
+                floorInstance.transform.rotate(0f, 1f, 0f, speed)
             }
             if (Gdx.input.isKeyPressed(Input.Keys.LEFT)) {
                 instance.transform.rotate(0f, 1f, 0f, -speed)
+                floorInstance.transform.rotate(0f, 1f, 0f, -speed)
             }
             if (Gdx.input.isKeyPressed(Input.Keys.UP)) {
                 instance.transform.rotate(1f, 0f, 0f, speed)
+                floorInstance.transform.rotate(1f, 0f, 0f, speed)
             }
             if (Gdx.input.isKeyPressed(Input.Keys.DOWN)) {
                 instance.transform.rotate(1f, 1f, 0f, -speed)
+                floorInstance.transform.rotate(1f, 1f, 0f, -speed)
             }
         }
     }
 
     override fun dispose() {
         chunkModel?.dispose()
+        floorModel.dispose()
     }
 }

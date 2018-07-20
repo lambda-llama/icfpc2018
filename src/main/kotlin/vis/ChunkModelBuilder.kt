@@ -6,6 +6,7 @@ import com.badlogic.gdx.graphics.VertexAttributes
 import com.badlogic.gdx.graphics.g3d.Material
 import com.badlogic.gdx.graphics.g3d.Model
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
+import com.badlogic.gdx.graphics.g3d.attributes.IntAttribute
 import com.badlogic.gdx.graphics.g3d.utils.MeshPartBuilder
 import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder
 import com.badlogic.gdx.math.Vector3
@@ -13,6 +14,8 @@ import io.github.lambdallama.Matrix
 
 fun io.github.lambdallama.Model.toVisModel(): Model =
         ChunkModelBuilder().build(this.matrix)
+
+fun floorModel(): Model = ChunkModelBuilder().buildFloor()
 
 private class ChunkModelBuilder {
     private val vertexBuffer: FloatArray = FloatArray(16 * 16 * 16 * 3 * 2 * 8 * 2)
@@ -25,7 +28,7 @@ private class ChunkModelBuilder {
     private val blockSize = .5f
     private var chunkData: Matrix? = null
 
-    private fun addVertex(x: Float, y: Float, z: Float, normal: Vector3) {
+    fun addVertex(x: Float, y: Float, z: Float, normal: Vector3) {
         nVerts++
         vertexBuffer[vertexBufferPosition++] = x
         vertexBuffer[vertexBufferPosition++] = y
@@ -36,13 +39,13 @@ private class ChunkModelBuilder {
         vertexBuffer[vertexBufferPosition++] = normal.z
     }
 
-    private fun addIndex(vararg indices: Int) {
+    fun addIndex(vararg indices: Int) {
         for (i in indices) {
             indexBuffer[indexBufferPosition++] = (nVerts + i).toShort()
         }
     }
 
-    private fun addMeshFromBuffers(meshBuilder: MeshPartBuilder) {
+    fun addMeshFromBuffers(meshBuilder: MeshPartBuilder) {
         val vertices = FloatArray(vertexBufferPosition)
         val indices = ShortArray(indexBufferPosition)
 
@@ -179,6 +182,33 @@ private class ChunkModelBuilder {
             }
         }
         println("Verts: $nVerts tris: ${nVerts / 6}")
+        addMeshFromBuffers(meshBuilder)
+        return builder.end()
+    }
+
+    fun buildFloor(): Model {
+        val builder = ModelBuilder()
+        builder.begin()
+        val meshBuilder: MeshPartBuilder
+        meshBuilder = builder.part(
+                "floor",
+                GL20.GL_TRIANGLES,
+                (VertexAttributes.Usage.Position or VertexAttributes.Usage.Normal).toLong(),
+                Material(ColorAttribute.createDiffuse(Color.CORAL), IntAttribute.createCullFace(GL20.GL_NONE))
+        )
+
+        val halfSize = blockSize * 100f
+        val normal = Vector3()
+        val position = Vector3(0.0f, 0.0f, 0.0f)
+
+        normal.set(0f, 1f, 0f)
+        addIndex(0, 1, 2, 2, 3, 0)
+        addVertex(position.x + halfSize, position.y - 5.5f, position.z - halfSize, normal)
+        addVertex(position.x - halfSize, position.y - 5.5f, position.z - halfSize, normal)
+        addVertex(position.x - halfSize, position.y - 5.5f, position.z + halfSize, normal)
+        addVertex(position.x + halfSize, position.y - 5.5f, position.z + halfSize, normal)
+
+
         addMeshFromBuffers(meshBuilder)
         return builder.end()
     }

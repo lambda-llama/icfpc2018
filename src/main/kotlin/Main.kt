@@ -11,7 +11,7 @@ fun main(args: Array<String>) {
         width = 1024
         height = 768
     }
-    val model = Model.parse(File("problemsL/LA042_tgt.mdl"))
+    val model = Model.parse(File("problemsL/LA001_tgt.mdl"))
     val engine = VoxelEngine(model)
     LwjglApplication(engine, config)
 }
