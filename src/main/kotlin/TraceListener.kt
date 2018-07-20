@@ -7,7 +7,7 @@ interface TraceListener {
     fun onSMove(state: State, id: Int, oldPos: Coord)
     fun onLMove(state: State, id: Int, oldPos: Coord, midPos: Coord)
     fun onFill(state: State, id: Int, fillPos: Coord)
-    fun onFission(state: State, id: Int, m: Int)
+    fun onFission(state: State, id: Int, newBotId: Int)
     fun onFusion(state: State, pId: Int, sId: Int, sPos: Coord)
     fun onStep()
 }

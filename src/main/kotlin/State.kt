@@ -21,10 +21,6 @@ class State {
 
     /* Private methods */
 
-    private fun mlen(dx: Int, dy: Int, dz: Int): Int {
-        return Math.abs(dx) + Math.abs(dy) + Math.abs(dz)
-    }
-
     /* General public methods */
 
     fun loadFrom(/* */) {
@@ -33,8 +29,11 @@ class State {
         energy = 0
 
         // TODO: load
+        bots.clear()
+        bots[1] = Bot(1, Coord.ZERO, (2..20).toSortedSet())
 
         expectedBotActionsThisStep = bots.count()
+        actedBots.clear()
     }
 
     fun addTraceListener(traceListener: TraceListener) {
@@ -146,17 +145,25 @@ class State {
         assert(bots.contains(id))
         assert(delta.isNear)
         val bot = bots[id]!!
+        assert(bot.seeds.any())
         val newBotPos = bot.pos + delta
         assert(newBotPos.isInBounds(resolution))
         // TODO: check that new position is not Full
-        // TODO: assert m
+        assert(m < bot.seeds.count())
 
-        // TODO: action
+        val split = bot.seeds.elementAt(m) + 1
+        val newBotSeeds = bot.seeds.headSet(split)
+        bot.seeds = bot.seeds.tailSet(split)
+        val newBotId = newBotSeeds.first()
+        newBotSeeds.remove(newBotId)
+        val newBot = Bot(newBotId, newBotPos, newBotSeeds)
+        bots[newBotId] = newBot
+
         energy += 24
         actedBots.add(id)
 
         for (listener in traceListeners) {
-            listener.onFission(this, id, m)
+            listener.onFission(this, id, newBotId)
         }
     }
 
@@ -168,13 +175,14 @@ class State {
         val sPos = sBot.pos
         assert((pBot.pos - sBot.pos).isNear)
 
-        // TODO: action
+        bots.remove(sBot.id)
+        pBot.seeds.add(sBot.id)
+        pBot.seeds.addAll(sBot.seeds)
         energy -= 24
         actedBots.add(pId)
         actedBots.add(sId)
 
         for (listener in traceListeners) {
-            // TODO: supply pBot/sBot coords
             listener.onFusion(this, pId, sId, sPos)
         }
     }
