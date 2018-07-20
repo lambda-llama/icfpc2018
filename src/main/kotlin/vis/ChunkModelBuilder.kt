@@ -13,22 +13,17 @@ import com.brzez.voxelengine.chunk.ChunkBlockSide
 import io.github.lambdallama.Matrix
 
 class ChunkModelBuilder {
-    protected val vertexBuffer: FloatArray
-    protected var vertexBufferPosition = 0
-    protected val indexBuffer: ShortArray
-    protected var indexBufferPosition = 0
+    private val vertexBuffer: FloatArray = FloatArray(16 * 16 * 16 * 3 * 2 * 8 * 2)
+    private var vertexBufferPosition = 0
+    private val indexBuffer: ShortArray = ShortArray(1337 * 8 * 8)
+    private var indexBufferPosition = 0
 
-    protected var nVerts = 0
+    private var nVerts = 0
 
-    protected val blockSize = .5f
+    private val blockSize = .5f
     private var chunkData: Matrix? = null
 
-    init {
-        vertexBuffer = FloatArray(16 * 16 * 16 * 3 * 2 * 8 * 2) // no idea how big it should be. Don't care for now.
-        indexBuffer = ShortArray(1337 * 8 * 8) // 8-)
-    }
-
-    protected fun addVertex(x: Float, y: Float, z: Float, normal: Vector3) {
+    private fun addVertex(x: Float, y: Float, z: Float, normal: Vector3) {
         nVerts++
         vertexBuffer[vertexBufferPosition++] = x
         vertexBuffer[vertexBufferPosition++] = y
@@ -39,13 +34,13 @@ class ChunkModelBuilder {
         vertexBuffer[vertexBufferPosition++] = normal.z
     }
 
-    protected fun addIndex(vararg indices: Int) {
+    private fun addIndex(vararg indices: Int) {
         for (i in indices) {
             indexBuffer[indexBufferPosition++] = (nVerts + i).toShort()
         }
     }
 
-    protected fun addMeshFromBuffers(meshBuilder: MeshPartBuilder) {
+    private fun addMeshFromBuffers(meshBuilder: MeshPartBuilder) {
         val vertices = FloatArray(vertexBufferPosition)
         val indices = ShortArray(indexBufferPosition)
 
@@ -59,7 +54,7 @@ class ChunkModelBuilder {
         vertexBufferPosition = indexBufferPosition
     }
 
-    protected fun isEmpty(x: Int, y: Int, z: Int): Boolean {
+    private fun isEmpty(x: Int, y: Int, z: Int): Boolean {
         if (x < 0 || x > chunkData!!.R) {
             return false
         }
@@ -72,7 +67,7 @@ class ChunkModelBuilder {
 
     }
 
-    protected fun addBlock(x: Int, y: Int, z: Int) {
+    private fun addBlock(x: Int, y: Int, z: Int) {
         val sides = getBlockSides(x, y, z)
         val halfSize = blockSize * .5f
 
@@ -133,7 +128,7 @@ class ChunkModelBuilder {
         }
     }
 
-    protected fun getBlockSides(x: Int, y: Int, z: Int): Int {
+    private fun getBlockSides(x: Int, y: Int, z: Int): Int {
         if (!chunkData!![x, y, z]) {
             return 0
         }
@@ -176,7 +171,7 @@ class ChunkModelBuilder {
                 }
             }
         }
-        println("Verts: " + nVerts + " tris: " + nVerts / 6)
+        println("Verts: $nVerts tris: ${nVerts / 6}")
         addMeshFromBuffers(meshBuilder)
         return builder.end()
     }
