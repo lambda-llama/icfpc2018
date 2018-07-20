@@ -24,7 +24,7 @@ data class Matrix(val R: Int, val coordinates: ByteArray) {
     operator fun get(x: Int, y: Int, z: Int): Boolean {
         val offset = x * R * R + y * R + z
         val b = coordinates[offset / 8].toInt() and 0xff
-        return (b ushr (offset % 8)) == 1
+        return b and (1 shl (offset % 8)) != 0
     }
 
     operator fun set(x: Int, y: Int, z: Int, value: Boolean) {
