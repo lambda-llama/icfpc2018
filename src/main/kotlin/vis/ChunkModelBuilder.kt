@@ -15,7 +15,7 @@ import io.github.lambdallama.Matrix
 fun io.github.lambdallama.Model.toVisModel(): Model =
         ChunkModelBuilder().build(this.matrix)
 
-fun floorModel(): Model = ChunkModelBuilder().buildFloor()
+fun io.github.lambdallama.Model.floorModel(): Model = ChunkModelBuilder().buildFloor(this.matrix)
 
 private class ChunkModelBuilder {
     private val vertexBuffer: FloatArray = FloatArray(16 * 16 * 16 * 3 * 2 * 8 * 2)
@@ -186,7 +186,7 @@ private class ChunkModelBuilder {
         return builder.end()
     }
 
-    fun buildFloor(): Model {
+    fun buildFloor(chunkData: Matrix): Model {
         val builder = ModelBuilder()
         builder.begin()
         val meshBuilder: MeshPartBuilder
@@ -197,17 +197,17 @@ private class ChunkModelBuilder {
                 Material(ColorAttribute.createDiffuse(Color.CORAL), IntAttribute.createCullFace(GL20.GL_NONE))
         )
 
-        val halfSize = blockSize * 100f
-        val normal = Vector3()
-        val position = Vector3(0.0f, 0.0f, 0.0f)
+        val halfSize = blockSize * 0.5f
+        val floorSize = blockSize * chunkData.R.toFloat()
+        val normal = Vector3(0.0f, 1.0f, 0.0f)
+        val position = Vector3()
+        position.sub(chunkData.R.toFloat() * blockSize * .5f)
 
-        normal.set(0f, 1f, 0f)
         addIndex(0, 1, 2, 2, 3, 0)
-        addVertex(position.x + halfSize, position.y - 5.5f, position.z - halfSize, normal)
-        addVertex(position.x - halfSize, position.y - 5.5f, position.z - halfSize, normal)
-        addVertex(position.x - halfSize, position.y - 5.5f, position.z + halfSize, normal)
-        addVertex(position.x + halfSize, position.y - 5.5f, position.z + halfSize, normal)
-
+        addVertex(position.x + floorSize, position.y - halfSize, position.z - floorSize, normal)
+        addVertex(position.x - floorSize, position.y - halfSize, position.z - floorSize, normal)
+        addVertex(position.x - floorSize, position.y - halfSize, position.z + floorSize, normal)
+        addVertex(position.x + floorSize, position.y - halfSize, position.z + floorSize, normal)
 
         addMeshFromBuffers(meshBuilder)
         return builder.end()

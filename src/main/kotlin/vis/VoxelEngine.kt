@@ -8,6 +8,7 @@ import com.badlogic.gdx.graphics.g3d.*
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
 import com.badlogic.gdx.graphics.g3d.environment.DirectionalLight
 import io.github.lambdallama.Matrix
+import vis.floorModel
 import vis.toVisModel
 import java.io.File
 
@@ -37,7 +38,7 @@ class VoxelEngine(private val model: io.github.lambdallama.Model) : ApplicationA
         chunkModel = model.toVisModel()
         instance = ModelInstance(chunkModel)
 
-        floorModel = vis.floorModel()
+        floorModel = model.floorModel()
         floorInstance = ModelInstance(floorModel)
     }
 
