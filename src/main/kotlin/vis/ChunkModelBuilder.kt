@@ -11,7 +11,10 @@ import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder
 import com.badlogic.gdx.math.Vector3
 import io.github.lambdallama.Matrix
 
-class ChunkModelBuilder {
+fun io.github.lambdallama.Model.toVisModel(): Model =
+        ChunkModelBuilder().build(this.matrix)
+
+private class ChunkModelBuilder {
     private val vertexBuffer: FloatArray = FloatArray(16 * 16 * 16 * 3 * 2 * 8 * 2)
     private var vertexBufferPosition = 0
     private val indexBuffer: ShortArray = ShortArray(1337 * 8 * 8)

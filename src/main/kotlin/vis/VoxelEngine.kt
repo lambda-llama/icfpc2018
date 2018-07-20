@@ -7,13 +7,13 @@ import com.badlogic.gdx.graphics.*
 import com.badlogic.gdx.graphics.g3d.*
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
 import com.badlogic.gdx.graphics.g3d.environment.DirectionalLight
-import vis.ChunkModelBuilder
+import vis.toVisModel
 import java.io.File
 
 class VoxelEngine : ApplicationAdapter() {
     lateinit var camera: PerspectiveCamera
-    lateinit var chunkModel: Model
-    lateinit var instance: ModelInstance
+    var chunkModel: Model? = null
+    var instance: ModelInstance? = null
     lateinit var modelBatch: ModelBatch
     lateinit var environment: Environment
 
@@ -31,15 +31,10 @@ class VoxelEngine : ApplicationAdapter() {
         environment.set(ColorAttribute(ColorAttribute.AmbientLight, 0.4f, 0.4f, 0.4f, 1f))
         environment.add(DirectionalLight().set(0.8f, 0.8f, 0.8f, -1f, -0.8f, -0.2f))
 
-        chunkModel = createChunkModel()
+        val m = io.github.lambdallama.Model.parse(File("problemsL/LA001_tgt.mdl"))
+        chunkModel = m.toVisModel()
         instance = ModelInstance(chunkModel)
     }
-
-    private fun createChunkModel(): Model {
-        val d = io.github.lambdallama.Model.parse(File("problemsL/LA001_tgt.mdl"))
-        return ChunkModelBuilder().build(d.matrix)
-    }
-
 
     override fun render() {
         Gdx.gl.glViewport(0, 0, Gdx.graphics.width, Gdx.graphics.height)
@@ -48,29 +43,30 @@ class VoxelEngine : ApplicationAdapter() {
         keyboardControls()
 
         modelBatch.begin(camera)
-        modelBatch.render(instance, environment)
+        instance?.let { modelBatch.render(it, environment) }
         modelBatch.end()
     }
 
     private fun keyboardControls() {
         val speed = 2f
-
-        if (Gdx.input.isKeyPressed(Input.Keys.RIGHT)) {
-            instance.transform.rotate(0f, 1f, 0f, speed)
+        val instance = instance
+        if (instance != null) {
+            if (Gdx.input.isKeyPressed(Input.Keys.RIGHT)) {
+                instance.transform.rotate(0f, 1f, 0f, speed)
+            }
+            if (Gdx.input.isKeyPressed(Input.Keys.LEFT)) {
+                instance.transform.rotate(0f, 1f, 0f, -speed)
+            }
+            if (Gdx.input.isKeyPressed(Input.Keys.UP)) {
+                instance.transform.rotate(1f, 0f, 0f, speed)
+            }
+            if (Gdx.input.isKeyPressed(Input.Keys.DOWN)) {
+                instance.transform.rotate(1f, 1f, 0f, -speed)
+            }
         }
-        if (Gdx.input.isKeyPressed(Input.Keys.LEFT)) {
-            instance.transform.rotate(0f, 1f, 0f, -speed)
-        }
-        if (Gdx.input.isKeyPressed(Input.Keys.UP)) {
-            instance.transform.rotate(1f, 0f, 0f, speed)
-        }
-        if (Gdx.input.isKeyPressed(Input.Keys.DOWN)) {
-            instance.transform.rotate(1f, 1f, 0f, -speed)
-        }
-
     }
 
     override fun dispose() {
-        chunkModel.dispose()
+        chunkModel?.dispose()
     }
 }
