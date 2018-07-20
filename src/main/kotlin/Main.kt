@@ -17,7 +17,7 @@ fun main(args: Array<String>) {
     val engine = VoxelEngine(model)
     thread {
         var last: State? = null
-        for (state in baseline(model)) {
+        for (state in Baseline().run(model)) {
             engine.updateModel(model.copy(matrix = state.matrix))
             Thread.sleep(300)
             last = state

@@ -18,37 +18,39 @@ fun State.multiSMove(b: BotView, target: Coord) {
     }
 }
 
-fun baseline(model: Model): Sequence<State> = buildSequence {
-    val state = State.forModel(model)
-    val (minCoord, maxCoord) = model.bbox
-    val b = state.getBot(1)
+class Baseline : Strategy {
+    override fun run(model: Model): Sequence<State> = buildSequence {
+        val state = State.forModel(model)
+        val (minCoord, maxCoord) = model.bbox
+        val b = state.getBot(1)
 
-    state.flip(b.id)
-    state.step()
-    state.multiSMove(b, minCoord + DeltaCoord(-1, -1, -1))
+        state.flip(b.id)
+        state.step()
+        state.multiSMove(b, minCoord + DeltaCoord(-1, -1, -1))
 
-    for (y in 0 until model.matrix.R) {
-        model.matrix.forEach(minCoord.copy(y = y), maxCoord.copy(y = y)) { x, _, z ->
-            val coord = Coord(x, y, z)
-            if (b.pos == coord) {
-                return@forEach
-            }
+        for (y in 0 until model.matrix.R) {
+            model.matrix.forEach(minCoord.copy(y = y), maxCoord.copy(y = y)) { x, _, z ->
+                val coord = Coord(x, y, z)
+                if (b.pos == coord) {
+                    return@forEach
+                }
 
-            val delta = coord - b.pos  // mlen == 1.
-            if (model.matrix[coord]) {
-                state.fill(b.id, delta)
+                val delta = coord - b.pos  // mlen == 1.
+                if (model.matrix[coord]) {
+                    state.fill(b.id, delta)
+                    state.step()
+                }
+                state.sMove(b.id, delta)
                 state.step()
             }
-            state.sMove(b.id, delta)
-            state.step()
+            yield(state)
         }
+        check(state.matrix == model.matrix)
+
+        state.flip(b.id)
+        state.step()
+        state.multiSMove(b, Coord.ZERO)
+        state.halt(b.id)
         yield(state)
     }
-    check(state.matrix == model.matrix)
-
-    state.flip(b.id)
-    state.step()
-    state.multiSMove(b, Coord.ZERO)
-    state.halt(b.id)
-    yield(state)
 }
