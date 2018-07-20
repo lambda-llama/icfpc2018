@@ -8,7 +8,7 @@ application {
 }
 val gdxVersion = "1.9.4"
 dependencies {
-    compile(kotlin("stdlib"))
+    compile(kotlin("stdlib-jre8"))
     compile("khttp:khttp:0.1.0")
     compile("com.google.guava:guava:25.1-jre")
     compile(project(":jve"))
