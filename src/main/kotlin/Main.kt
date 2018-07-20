@@ -6,8 +6,12 @@ import io.github.lambdallama.vis.VoxelEngine
 import java.io.File
 
 fun main(args: Array<String>) {
-    val config = LwjglApplicationConfiguration().apply { forceExit = false }
-    val model = Model.parse(File("problemsL/LA001_tgt.mdl"))
+    val config = LwjglApplicationConfiguration().apply {
+        forceExit = false
+        width = 1024
+        height = 768
+    }
+    val model = Model.parse(File("problemsL/LA042_tgt.mdl"))
     val engine = VoxelEngine(model)
     LwjglApplication(engine, config)
 }

@@ -164,7 +164,12 @@ private class ChunkModelBuilder {
         val builder = ModelBuilder()
         builder.begin()
         val meshBuilder: MeshPartBuilder
-        meshBuilder = builder.part("potato", GL20.GL_TRIANGLES, (VertexAttributes.Usage.Position or VertexAttributes.Usage.Normal).toLong(), Material(ColorAttribute.createDiffuse(Color.FOREST)))
+        meshBuilder = builder.part(
+                "potato",
+                GL20.GL_TRIANGLES,
+                (VertexAttributes.Usage.Position or VertexAttributes.Usage.Normal).toLong(),
+                Material(ColorAttribute.createDiffuse(Color.FOREST))
+        )
 
         for (x in 0 until chunkData.R) {
             for (y in 0 until chunkData.R) {
