@@ -7,9 +7,8 @@ import com.badlogic.gdx.graphics.*
 import com.badlogic.gdx.graphics.g3d.*
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
 import com.badlogic.gdx.graphics.g3d.environment.DirectionalLight
-import com.badlogic.gdx.math.Vector3
-import com.brzez.voxelengine.chunk.ChunkData
-import com.brzez.voxelengine.chunk.ChunkModelBuilder
+import vis.ChunkModelBuilder
+import java.io.File
 
 class VoxelEngine : ApplicationAdapter() {
     lateinit var camera: PerspectiveCamera
@@ -37,24 +36,8 @@ class VoxelEngine : ApplicationAdapter() {
     }
 
     private fun createChunkModel(): Model {
-        val d = ChunkData(16)
-        val halfSize = (d.size / 2).toFloat()
-        // fill the chunk data w/ some random crap
-        var x = d.size.toInt()
-        while (x-- > 0) {
-            var y = d.size.toInt()
-            while (y-- > 0) {
-                var z = d.size.toInt()
-                while (z-- > 0) {
-                    val len = Vector3(halfSize - x, halfSize - y, halfSize - z)
-                    if (len.len() / d.size > .4f) {
-                        continue
-                    }
-                    d.set(x, y, z, 1.toByte())
-                }
-            }
-        }
-        return ChunkModelBuilder().build(d)
+        val d = io.github.lambdallama.Model.parse(File("problemsL/LA001_tgt.mdl"))
+        return ChunkModelBuilder().build(d.matrix)
     }
 
 
