@@ -1,5 +1,3 @@
-package io.github.lambdallama
-
 import com.google.common.math.IntMath
 import java.io.File
 import java.math.RoundingMode

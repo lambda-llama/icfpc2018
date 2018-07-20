@@ -1,5 +1,3 @@
-package lambdallama.github.io
-
 interface TraceListener {
     fun onHalt(state: State, bot: Int)
     fun onWait(state: State, bot: Int)
