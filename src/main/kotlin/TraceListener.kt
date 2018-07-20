@@ -1,3 +1,5 @@
+package io.github.lambdallama
+
 interface TraceListener {
     fun onHalt(state: State, bot: Int)
     fun onWait(state: State, bot: Int)

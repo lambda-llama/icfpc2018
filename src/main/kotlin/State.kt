@@ -1,3 +1,5 @@
+package io.github.lambdallama
+
 class State {
     companion object {
         enum class Harmonics {
