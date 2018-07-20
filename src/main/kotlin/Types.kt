@@ -57,20 +57,14 @@ data class DeltaCoord(val dx: Int, val dy: Int, val dz: Int) : Comparable<DeltaC
 }
 
 data class Matrix(val R: Int, val coordinates: ByteArray) {
-    inline fun forEach(from: Coord, to: Coord, block: (Int, Int, Int) -> Unit) {
+    inline fun forEach(
+        from: Coord = Coord(0, 0, 0),
+        to: Coord = Coord(R, R, R),
+        block: (Int, Int, Int) -> Unit
+    ) {
         for (x in from.x..to.x) {
             for (y in from.y..to.y) {
                 for (z in from.z..to.z) {
-                    block(x, y, z)
-                }
-            }
-        }
-    }
-
-    inline fun forEach(block: (Int, Int, Int) -> Unit) {
-        for (x in 0 until R) {
-            for (y in 0 until R) {
-                for (z in 0 until R) {
                     block(x, y, z)
                 }
             }
@@ -131,7 +125,9 @@ data class Matrix(val R: Int, val coordinates: ByteArray) {
 
                 for (dxdydz in DXDYDZ_MLEN1) {
                     val n = c + dxdydz
-                    if (n.isInBounds(R) && this[n] && !seen[n]) {
+                    if (n.isInBounds(R) && this[n] && !seen[n]
+                        // vvv debug this later.
+                        && !q.contains(n)) {
                         q.add(n)
                     }
                 }
