@@ -1,13 +1,7 @@
 package io.github.lambdallama
 
+import java.util.*
+
 interface TraceListener {
-    fun onHalt(state: State, id: Int)
-    fun onWait(state: State, id: Int)
-    fun onFlip(state: State, id: Int)
-    fun onSMove(state: State, id: Int, oldPos: Coord)
-    fun onLMove(state: State, id: Int, oldPos: Coord, midPos: Coord)
-    fun onFill(state: State, id: Int, fillPos: Coord)
-    fun onFission(state: State, id: Int, newBotId: Int)
-    fun onFusion(state: State, pId: Int, sId: Int, sPos: Coord)
-    fun onStep()
+    fun onStep(commands: SortedMap<Int, Command>)
 }

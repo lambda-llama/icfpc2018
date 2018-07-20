@@ -6,8 +6,8 @@ class State(
 ) {
     private val traceListeners: ArrayList<TraceListener> = ArrayList()
 
-    private val actedBots: HashSet<Int> = HashSet()
-    private var expectedBotActionsThisStep: Int = 0
+    private val botCommands: HashMap<Int, Command> = HashMap()
+    private var expectedBotActionsThisStep: Int = bots.count()
     var resolution: Coord = Coord.ZERO
     var harmonics: Harmonics = Harmonics.Low
         private set
@@ -17,6 +17,7 @@ class State(
     /* Private methods */
 
     /* General public methods */
+
     fun addTraceListener(traceListener: TraceListener) {
         traceListeners.add(traceListener)
     }
@@ -30,6 +31,7 @@ class State(
     }
 
     /* Commands */
+
     fun halt(id: Int) {
         assert(bots.contains(id))
         assert(bots.count() == 1)
@@ -38,32 +40,20 @@ class State(
         assert(harmonics == Harmonics.Low)
 
         bots.remove(id)
-        actedBots.add(id)
-
-        for (listener in traceListeners) {
-            listener.onHalt(this, id)
-        }
+        botCommands[id] = Halt
     }
 
     fun wait(id: Int) {
         assert(bots.contains(id))
 
-        actedBots.add(id)
-
-        for (listener in traceListeners) {
-            listener.onWait(this, id)
-        }
+        botCommands[id] = Wait
     }
 
     fun flip(id: Int) {
         assert(bots.contains(id))
 
         harmonics = harmonics.flip()
-        actedBots.add(id)
-
-        for (listener in traceListeners) {
-            listener.onFlip(this, id)
-        }
+        botCommands[id] = Flip
     }
 
     fun sMove(id: Int, delta: DeltaCoord) {
@@ -78,11 +68,7 @@ class State(
 
         bot.pos = newPos
         energy += 2 * delta.mlen
-        actedBots.add(id)
-
-        for (listener in traceListeners) {
-            listener.onSMove(this, id, oldPos)
-        }
+        botCommands[id] = SMove(delta)
     }
 
     fun lMove(id: Int, delta0: DeltaCoord, delta1: DeltaCoord) {
@@ -101,11 +87,7 @@ class State(
 
         bot.pos = newPos
         energy += 2 * (delta0.mlen + 2 + delta1.mlen)
-        actedBots.add(id)
-
-        for (listener in traceListeners) {
-            listener.onLMove(this, id, oldPos, midPos)
-        }
+        botCommands[id] = LMove(delta0, delta1)
     }
 
     fun fill(id: Int, delta: DeltaCoord) {
@@ -121,12 +103,7 @@ class State(
             matrix[fillPos] = true
             energy += 12
         }
-
-        actedBots.add(id)
-
-        for (listener in traceListeners) {
-            listener.onFill(this, id, fillPos)
-        }
+        botCommands[id] = Fill(delta)
     }
 
     fun fission(id: Int, delta: DeltaCoord, m: Int) {
@@ -148,11 +125,7 @@ class State(
         bots[newBotId] = newBot
 
         energy += 24
-        actedBots.add(id)
-
-        for (listener in traceListeners) {
-            listener.onFission(this, id, newBotId)
-        }
+        botCommands[id] = Fission(delta, m)
     }
 
     fun fusion(pId: Int, sId: Int) {
@@ -160,30 +133,28 @@ class State(
         assert(bots.contains(sId))
         val pBot = bots[pId]!!
         val sBot = bots[sId]!!
-        val sPos = sBot.pos
         assert((pBot.pos - sBot.pos).isNear)
 
         bots.remove(sBot.id)
         pBot.seeds.add(sBot.id)
         pBot.seeds.addAll(sBot.seeds)
         energy -= 24
-        actedBots.add(pId)
-        actedBots.add(sId)
-
-        for (listener in traceListeners) {
-            listener.onFusion(this, pId, sId, sPos)
-        }
+        botCommands[pId] = FusionP(sBot.pos - pBot.pos)
+        botCommands[sId] = FusionS(pBot.pos - sBot.pos)
     }
 
     fun step() {
-        assert(actedBots.count() == expectedBotActionsThisStep)
+        assert(botCommands.count() == expectedBotActionsThisStep)
+
+        energy += if (harmonics == Harmonics.High) 30 * resolution.volume else 3 * resolution.volume
+        energy += 24 * expectedBotActionsThisStep
 
         expectedBotActionsThisStep = bots.count()
-        actedBots.clear()
-        energy += if (harmonics == Harmonics.High) 30 * resolution.volume else 3 * resolution.volume
+        val commands = botCommands.toSortedMap()
+        botCommands.clear()
 
         for (listener in traceListeners) {
-            listener.onStep()
+            listener.onStep(commands)
         }
     }
 
