@@ -1,5 +1,6 @@
 package io.github.lambdallama
 
+import kotlin.coroutines.experimental.buildSequence
 import kotlin.math.min
 
 fun State.multiSMove(b: BotView, target: Coord) {
@@ -17,7 +18,7 @@ fun State.multiSMove(b: BotView, target: Coord) {
     }
 }
 
-fun baseline(model: Model): State {
+fun baseline(model: Model): Sequence<State> = buildSequence {
     val state = State.forModel(model)
     val (minCoord, maxCoord) = model.bbox
     val b = state.getBot(1)
@@ -41,11 +42,12 @@ fun baseline(model: Model): State {
             state.sMove(b.id, delta)
             state.step()
         }
+        yield(state)
     }
     check(state.matrix == model.matrix)
 
     state.flip(b.id)
     state.step()
     state.multiSMove(b, Coord.ZERO)
-    return state
+    yield(state)
 }

@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.dsl.Coroutines
+
 plugins {
     application
     kotlin("jvm") version "1.2.51"
@@ -25,4 +27,7 @@ dependencies {
 
 application {
     mainClassName = "io.github.lambdallama.MainKt"
+}
+kotlin {
+    experimental.coroutines = Coroutines.ENABLE
 }

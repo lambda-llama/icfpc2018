@@ -20,6 +20,8 @@ class VoxelEngine(private val model: io.github.lambdallama.Model) : ApplicationA
     lateinit var floorInstance: ModelInstance
     lateinit var modelBatch: ModelBatch
     lateinit var environment: Environment
+    @Volatile
+    private var nextModel: io.github.lambdallama.Model? = null
 
     override fun create() {
         modelBatch = ModelBatch()
@@ -42,7 +44,19 @@ class VoxelEngine(private val model: io.github.lambdallama.Model) : ApplicationA
         floorInstance = ModelInstance(floorModel)
     }
 
+    fun updateModel(model: io.github.lambdallama.Model) {
+        nextModel = model
+    }
+
     override fun render() {
+        val next = nextModel
+        if (next != null) {
+            nextModel = null
+            chunkModel?.dispose()
+            chunkModel = next.toVisModel()
+            instance = ModelInstance(chunkModel)
+        }
+
         Gdx.gl.glViewport(0, 0, Gdx.graphics.width, Gdx.graphics.height)
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT or GL20.GL_DEPTH_BUFFER_BIT)
 
