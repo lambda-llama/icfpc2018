@@ -10,4 +10,5 @@ interface TraceListener {
     fun onFission(state: State, bot: Int, dx: Int, dy: Int, dz: Int, m: Int)
     fun onFusion(state: State, pBot: Int, sBot: Int, pX: Int, pY: Int, pZ: Int,
                  sX: Int, sY: Int, sZ: Int)
+    fun onStep()
 }
