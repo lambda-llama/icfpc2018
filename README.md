@@ -24,5 +24,5 @@ $ ./gradlew test
 Running visualisation:
 
 ```bash
-./gradlew jve:desktop:run
+./gradlew :run
 ```

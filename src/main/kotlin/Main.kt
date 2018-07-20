@@ -1,18 +1,12 @@
 package io.github.lambdallama
 
+import com.badlogic.gdx.backends.lwjgl.LwjglApplication
+import com.badlogic.gdx.backends.lwjgl.LwjglApplicationConfiguration
+import com.brzez.voxelengine.VoxelEngine
 import khttp.get
 import khttp.structures.authorization.BasicAuthorization
 
 fun main(args: Array<String>) {
-    val r = get("https://api.github.com/user", auth = BasicAuthorization("user", "pass"))
-    r.statusCode
-    println(r.statusCode)
-// 200
-    r.headers["Content-Type"]
-// "application/json; charset=utf-8"
-    r.text
-// """{"type": "User"..."""
-    r.jsonObject
-    println(r.jsonObject)
-    println(r.jsonObject["documentation_url"])
+    val config = LwjglApplicationConfiguration().apply { forceExit = false }
+    LwjglApplication(VoxelEngine(), config)
 }
