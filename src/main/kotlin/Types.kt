@@ -34,7 +34,7 @@ data class Matrix(val R: Int, val coordinates: ByteArray) {
         coordinates[offset / 8] = if (value) {
             (b or mask).toByte()
         } else {
-            (b and mask).toByte().inv()
+            (b and mask.inv()).toByte()
         }
     }
 
