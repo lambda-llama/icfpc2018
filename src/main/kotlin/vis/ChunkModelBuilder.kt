@@ -18,9 +18,9 @@ fun io.github.lambdallama.Model.toVisModel(): Model =
 fun io.github.lambdallama.Model.floorModel(): Model = ChunkModelBuilder().buildFloor(this.matrix)
 
 private class ChunkModelBuilder {
-    private val vertexBuffer: FloatArray = FloatArray(16 * 16 * 16 * 3 * 2 * 8 * 2)
+    private val vertexBuffer: FloatArray = FloatArray(16 * 16 * 16 * 3 * 2 * 8 * 2 * 10)
     private var vertexBufferPosition = 0
-    private val indexBuffer: ShortArray = ShortArray(1337 * 8 * 8)
+    private val indexBuffer: ShortArray = ShortArray(1337 * 8 * 8 * 10)
     private var indexBufferPosition = 0
 
     private var nVerts = 0
