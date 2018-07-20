@@ -67,6 +67,16 @@ data class Matrix(val R: Int, val coordinates: ByteArray) {
         }
     }
 
+    inline fun forEach(block: (Int, Int, Int) -> Unit) {
+        for (x in 0 until R) {
+            for (y in 0 until R) {
+                for (z in 0 until R) {
+                    block(x, y, z)
+                }
+            }
+        }
+    }
+
     operator fun get(c: Coord): Boolean = get(c.x, c.y, c.z)
 
     operator fun get(x: Int, y: Int, z: Int): Boolean {
