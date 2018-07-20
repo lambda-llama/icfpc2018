@@ -19,3 +19,10 @@ Running the tests is just as easy
 ```bash
 $ ./gradlew test
 ```
+
+
+Running visualisation:
+
+```bash
+./gradlew jve:desktop:run
+```
