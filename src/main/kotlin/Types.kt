@@ -3,9 +3,17 @@ import java.io.File
 import java.math.RoundingMode
 import java.nio.ByteBuffer
 import java.util.*
-import kotlin.experimental.and
 import kotlin.experimental.inv
-import kotlin.experimental.or
+import kotlin.math.abs
+
+
+data class Voxel(val x: Int, val y: Int, val z: Int) {
+    val mlen: Int get() = abs(x) + abs(y) + abs(z)
+
+    operator fun plus(other: Voxel): Voxel {
+        return Voxel(x + other.x, y + other.y, z + other.z)
+    }
+}
 
 data class Matrix(val R: Int, val coordinates: ByteArray) {
     /** Returns true if the voxel at a given coordinate is Full. */
@@ -50,14 +58,45 @@ data class Matrix(val R: Int, val coordinates: ByteArray) {
             }
         }
 
-        // y == 0 i.e. start from the ground.
-        for (x in 0 until R) {
-            for (z in 0 until R) {
-                val q = ArrayDeque<Pair<Int, Int>>()
+        fun go(initial: Voxel, seen: Matrix) {
+            val q = ArrayDeque<Voxel>()
+            q.add(initial)
+            while (q.isNotEmpty()) {
+                val c = q.pop()
+                seen[c.x, c.y, c.z] = true
+
+                for (dxdydz in DXDYDZ_MLEN1) {
+                    val n = c + dxdydz
+                    if (n.x in 0..(R - 1) && n.y in 0..(R - 1) && n.z in 0..(R - 1)
+                        && this[n.x, n.y, n.z]
+                        && !seen[n.x, n.y, n.z]) {
+                        q.add(n)
+                    }
+                }
             }
         }
 
-        return true
+        // y == 0 i.e. start from the ground.
+        val seen = copy(coordinates = ByteArray(coordinates.size))
+        for (x in 0 until R) {
+            for (z in 0 until R) {
+                if (this[x, 0, z] && !seen[x, 0, z]) {
+                    go(Voxel(x, 0, z), seen)
+                }
+            }
+        }
+
+        return seen == this  // BROKEN.
+    }
+
+    companion object {
+        val DXDYDZ_MLEN1: Array<Voxel> = arrayOf(
+            Voxel(0, 0, 1),
+            Voxel(0, 1, 0),
+            Voxel(1, 0, 0),
+            Voxel(0, 0, -1),
+            Voxel(0, -1, 0),
+            Voxel(-1, 0, 0))
     }
 }
 
