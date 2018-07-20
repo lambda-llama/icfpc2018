@@ -10,10 +10,10 @@ class TraceWriter(val stream: DataOutputStream) : TraceListener {
         const val FLIP: Int = 0b1111_1101
         const val SMOVE: Int = 0b0000_0100
         const val LMOVE: Int = 0b0000_1100
+        const val FILL: Int = 0b0000_0011
+        const val FISSION: Int = 0b0000_0101
         const val FUSION_P: Int = 0b0000_0111
         const val FUSION_S: Int = 0b0000_0110
-        const val FISSION: Int = 0b0000_0101
-        const val FILL: Int = 0b0000_0011
 
         fun linearAxis(coord: DeltaCoord): Int {
             assert(coord.isLinear)
