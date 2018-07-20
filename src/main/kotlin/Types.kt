@@ -64,7 +64,7 @@ data class Matrix(val R: Int, val coordinates: ByteArray) {
         return when {
             this === other -> true
             other !is Matrix -> false
-            else -> R != other.R && Arrays.equals(coordinates, other.coordinates)
+            else -> R == other.R && Arrays.equals(coordinates, other.coordinates)
         }
     }
 
@@ -94,8 +94,7 @@ data class Matrix(val R: Int, val coordinates: ByteArray) {
                 for (dxdydz in DXDYDZ_MLEN1) {
                     val n = c + dxdydz
                     if (n.x in 0..(R - 1) && n.y in 0..(R - 1) && n.z in 0..(R - 1)
-                        && this[n.x, n.y, n.z]
-                        && !seen[n.x, n.y, n.z]) {
+                        && this[n.x, n.y, n.z] && !seen[n.x, n.y, n.z]) {
                         q.add(n)
                     }
                 }
@@ -112,7 +111,7 @@ data class Matrix(val R: Int, val coordinates: ByteArray) {
             }
         }
 
-        return seen == this  // BROKEN.
+        return seen == this
     }
 
     companion object {

@@ -20,6 +20,27 @@ class MatrixTest {
             }
         }
     }
+
+    @Test
+    fun testWellFormedEmpty() {
+        val m = Matrix(2, ByteArray(1))
+        assertTrue(m.isWellFormed)
+    }
+
+    @Test
+    fun testWellFormedSingle() {
+        val m = Matrix(3, ByteArray(4))
+        m[1, 0, 1] = true
+        assertTrue(m.isWellFormed)
+    }
+
+    @Test
+    fun testWellFormedDoubleLinked() {
+        val m = Matrix(3, ByteArray(4))
+        m[1, 0, 1] = true
+        m[1, 1, 1] = true
+        assertTrue(m.isWellFormed)
+    }
 }
 
 class ModelTest {
