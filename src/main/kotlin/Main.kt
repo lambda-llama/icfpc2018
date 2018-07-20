@@ -11,7 +11,9 @@ fun main(args: Array<String>) {
         width = 1024
         height = 768
     }
-    val model = Model.parse(File("problemsL/LA103_tgt.mdl"))
-    val engine = VoxelEngine(model)
+    val model = Model.parse(File("problemsL/LA017_tgt.mdl"))
+    val state = baseline(model)
+    println("Energy: " + state.energy)
+    val engine = VoxelEngine(model.copy(matrix = state.matrix))
     LwjglApplication(engine, config)
 }

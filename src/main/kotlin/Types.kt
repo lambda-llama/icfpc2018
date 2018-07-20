@@ -1,5 +1,7 @@
 package io.github.lambdallama
 
+import com.google.common.collect.ComparisonChain
+import com.google.common.collect.Ordering
 import com.google.common.math.IntMath
 import java.io.File
 import java.math.RoundingMode
@@ -9,7 +11,7 @@ import kotlin.math.abs
 import kotlin.math.max
 
 
-data class Coord(val x: Int, val y: Int, val z: Int) {
+data class Coord(val x: Int, val y: Int, val z: Int) : Comparable<Coord> {
     val volume: Int get() = x * y * z
 
     fun isInBounds(R: Int): Boolean {
@@ -24,12 +26,20 @@ data class Coord(val x: Int, val y: Int, val z: Int) {
         return DeltaCoord(x - coord.x, y - coord.y, z - coord.z)
     }
 
+    override fun compareTo(other: Coord): Int = ComparisonChain.start()
+        .compare(x, other.x)
+        .compare(y, other.y)
+        .compare(z, other.z)
+        .result()
+
     companion object {
         val ZERO = Coord(0, 0, 0)
     }
 }
 
-data class DeltaCoord(val dx: Int, val dy: Int, val dz: Int) {
+data class DeltaCoord(val dx: Int, val dy: Int, val dz: Int) : Comparable<DeltaCoord> {
+    operator fun unaryMinus(): DeltaCoord = DeltaCoord(-dx, -dy, -dz)
+
     val mlen: Int get() = abs(dx) + abs(dy) + abs(dz)
     val clen: Int get() = max(max(abs(dx), abs(dy)), abs(dz))
 
@@ -38,6 +48,12 @@ data class DeltaCoord(val dx: Int, val dy: Int, val dz: Int) {
     val isShortLinear: Boolean get() = isLinear && mlen <= 5
     val isLongLinear: Boolean get() = isLinear && mlen <= 15
     val isNear: Boolean get() = mlen in 1..2 && clen == 1
+
+    override fun compareTo(other: DeltaCoord): Int = ComparisonChain.start()
+        .compare(dx, other.dx)
+        .compare(dy, other.dy)
+        .compare(dz, other.dz)
+        .result()
 }
 
 data class Matrix(val R: Int, val coordinates: ByteArray) {
@@ -141,6 +157,21 @@ data class Matrix(val R: Int, val coordinates: ByteArray) {
 }
 
 data class Model(val matrix: Matrix) {
+    val bbox: Pair<Coord, Coord> get() {
+        var minCoord = Coord(matrix.R - 1, matrix.R - 1, matrix.R - 1)
+        var maxCoord = Coord.ZERO
+        val ord = Ordering.natural<Coord>()
+        matrix.forEach(maxCoord, minCoord) { x, y, z ->
+            if (matrix[x, y, z]) {
+                val coord = Coord(x, y, z)
+                minCoord = ord.min(minCoord, coord)
+                maxCoord = ord.max(maxCoord, coord)
+            }
+        }
+
+        return ord.min(minCoord, maxCoord) to ord.max(minCoord, maxCoord)
+    }
+
     companion object {
         fun parse(path: File): Model {
             val buf = ByteBuffer.wrap(path.readBytes())
