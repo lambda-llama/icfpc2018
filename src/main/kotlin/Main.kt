@@ -32,7 +32,7 @@ fun main(args: Array<String>) {
             runNonInteractive(modelFilePath, traceFilePath, args)
         }
     } else {
-        runInteractive("problemsL/LA090_tgt.mdl", "out.nbt", listOf("layered"))
+        runInteractive("problemsL/LA045_tgt.mdl", "out.nbt", listOf("layered"))
     }
 }
 

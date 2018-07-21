@@ -50,7 +50,7 @@ class State(
     /* Commands */
 
     fun halt(id: Int) {
-        check(bots.size == 1)
+        check(bots.count { it != null } == 1)
         val bot = checkNotNull(bots[id])
         check(bot.pos == Coord.ZERO)
         check(harmonics == Harmonics.Low)

@@ -80,7 +80,7 @@ class VoxelEngine(
         val sb = StringBuilder()
                 .appendln("Strategy: ${strategyName}")
                 .appendln("Refresh interval: ${delayMs}ms" + (if (paused) " (paused)" else ""))
-                .appendln("Number of bots: ${state.bots.count()}")
+                .appendln("Number of bots: ${state.bots.count { it != null }}")
                 .appendln("Harmonics: ${state.harmonics}")
                 .appendln("Steps: ${snapshot.totalSteps}")
                 .appendln("Energy: ${state.energy}")

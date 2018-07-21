@@ -1,6 +1,7 @@
 package io.github.lambdallama
 
 import gnu.trove.impl.Constants
+import gnu.trove.map.hash.TObjectIntHashMap
 import gnu.trove.map.hash.TObjectLongHashMap
 import java.util.*
 import kotlin.coroutines.experimental.buildSequence
@@ -30,8 +31,9 @@ sealed class LList<T> {
     abstract fun reversed(): LList<T>
 }
 
-private fun State.heuristic(id: Int, target: Coord): Long {
-    return energy + (this[id]!!.pos - target).clen
+private fun State.heuristic(id: Int, target: Coord): Int {
+    // Energy leads us to the wrong direction!
+    return (this[id]!!.pos - target).clen
 }
 
 /**
@@ -42,35 +44,32 @@ private fun State.heuristic(id: Int, target: Coord): Long {
 fun multiSLMove(initial: State, id: Int, target: Coord): Sequence<State> {
     require(target.isInBounds(initial.matrix.R))
 
-    val heuristic = TObjectLongHashMap<Coord>(
+    val heuristic = TObjectIntHashMap<Coord>(
         Constants.DEFAULT_CAPACITY,
         Constants.DEFAULT_LOAD_FACTOR,
-        Long.MAX_VALUE)
+        Int.MAX_VALUE)
     val next = Matrix.zerosLike(initial.matrix)
-    val meta = HashMap<Coord, Pair<State, LList<Command>>>()
-    val q = PriorityQueue<Coord>(compareBy { heuristic[it] })
-    meta[initial[id]!!.pos] = initial to LList.Nil()
-    q.add(initial[id]!!.pos)
+    val q = PriorityQueue<Pair<State, LList<Command>>>(compareBy { it.first.heuristic(id, target) })
+    q.add(initial to LList.Nil())
     var found: LList<Command>? = null
     while (q.isNotEmpty()) {
-        val pos = q.poll()
-        next[pos] = false
-        val (state, commands) = meta[pos]!!
-        if (pos == target) {
+        val (state, commands) = q.poll()
+        val b = state[id]!!
+        if (b.pos == target) {
             found = commands
             break
         }
 
-        for ((command, n) in state.matrix.sNeighborhood(pos) + state.matrix.lNeighborhood(pos)) {
-            if (!next[pos]) {
+        next[b.pos] = false
+        for ((command, n) in state.matrix.sNeighborhood(b.pos) + state.matrix.lNeighborhood(b.pos)) {
+            if (!next[b.pos]) {
                 val split = state.shallowSplit()
-                command(split, id)
+                command(split, b.id)
                 split.step()
-                val h = split.heuristic(id, target)
+                val h = split.heuristic(b.id, target)
                 if (h < heuristic[n]) {
-                    meta[n] = split to LList.Cons(command, commands)
+                    q.add(split to LList.Cons(command, commands))
                     heuristic.put(n, h)
-                    q.add(n)
                     next[n] = true
                 }
             }
