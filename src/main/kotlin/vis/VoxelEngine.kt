@@ -8,6 +8,7 @@ import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator
 import com.badlogic.gdx.graphics.g3d.*
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
 import com.badlogic.gdx.graphics.g3d.environment.DirectionalLight
+import com.badlogic.gdx.graphics.g3d.utils.FirstPersonCameraController
 import com.badlogic.gdx.math.Matrix4
 import com.badlogic.gdx.scenes.scene2d.Stage
 import com.badlogic.gdx.scenes.scene2d.ui.Label
@@ -23,7 +24,6 @@ class VoxelEngine(
         private val strategyName: String,
         val currentState: CurrentState
 ) : ApplicationAdapter() {
-    lateinit var camera: PerspectiveCamera
     private var chunkModel: Model? = null
     lateinit var floorModel: Model
     lateinit var modelBatch: ModelBatch
@@ -33,16 +33,23 @@ class VoxelEngine(
 
     private var transform = Matrix4().idt()
 
+    private lateinit var cntl: FirstPersonCameraController
+
+    private lateinit var camera: PerspectiveCamera
+
     override fun create() {
         modelBatch = ModelBatch()
 
         camera = PerspectiveCamera(67f, Gdx.graphics.width.toFloat(), Gdx.graphics.height.toFloat())
-        camera.position.set(10f, 10f, 10f)
-        camera.lookAt(0f, 0f, 0f)
-        camera.near = 1f
-        camera.far = 300f
-        camera.update()
-
+                .apply {
+                    position.set(10f, 10f, 10f)
+                    lookAt(0f, 0f, 0f)
+                    near = 1f
+                    far = 300f
+                }
+        cntl = FirstPersonCameraController(camera).apply { setVelocity(10f) }
+        Gdx.input.inputProcessor = cntl
+        cntl.update()
         stage = Stage(ScreenViewport())
 
         environment = Environment()
@@ -87,8 +94,8 @@ class VoxelEngine(
         sb
                 .appendln("")
                 .appendln("Controls:")
-                .appendln("      rotate: arrows or WASD")
-                .appendln("      zoom: -/= or Q/E")
+                .appendln("      rotate: mouse")
+                .appendln("      move: WASD")
                 .appendln("      speed: Z/X")
                 .appendln("      pause: C")
                 .appendln("      step: SPACE")
@@ -118,6 +125,7 @@ class VoxelEngine(
     }
 
     private fun keyboardControls() {
+        cntl.update()
         val speed = 2f
         if (Gdx.input.isKeyPressed(Input.Keys.Z)) {
             currentState.delayMs *= 0.95
@@ -130,33 +138,6 @@ class VoxelEngine(
         }
         if (Gdx.input.isKeyJustPressed(Input.Keys.SPACE)) {
             currentState.step = true
-        }
-
-        if (Gdx.input.isKeyPressed(Input.Keys.EQUALS)
-                || Gdx.input.isKeyPressed(Input.Keys.E)) {
-            transform.scale(1.1f, 1.1f, 1.1f)
-        }
-
-        if (Gdx.input.isKeyPressed(Input.Keys.MINUS)
-                || Gdx.input.isKeyPressed(Input.Keys.Q)) {
-            transform.scale(0.9f, 0.9f, 0.9f)
-        }
-
-        if (Gdx.input.isKeyPressed(Input.Keys.RIGHT)
-                || Gdx.input.isKeyPressed(Input.Keys.D)) {
-            transform.rotate(0f, 1f, 0f, speed)
-        }
-        if (Gdx.input.isKeyPressed(Input.Keys.LEFT)
-                || Gdx.input.isKeyPressed(Input.Keys.A)) {
-            transform.rotate(0f, 1f, 0f, -speed)
-        }
-        if (Gdx.input.isKeyPressed(Input.Keys.UP)
-                || Gdx.input.isKeyPressed(Input.Keys.W)) {
-            transform.rotate(1f, 0f, 0f, speed)
-        }
-        if (Gdx.input.isKeyPressed(Input.Keys.DOWN)
-                || Gdx.input.isKeyPressed(Input.Keys.S)) {
-            transform.rotate(1f, 1f, 0f, -speed)
         }
     }
 

@@ -22,19 +22,19 @@ fun getStrategy(args: List<String>, model: Model): Strategy {
 
 fun main(args: Array<String>) {
     var args = (System.getenv("ARGS") ?: "layered").split(" ").toList()
-
-    if (args[0] == "batch") {
-        val batchFilePath = args[1]
-        args = args.drop(2)
-        for (line in File(batchFilePath).readLines()) {
-            val parts = line.split(" ")
-            val modelFilePath = parts[0]
-            val traceFilePath = parts[1]
-            runNonInteractive(modelFilePath, traceFilePath, args)
-        }
-    } else {
-        runInteractive("problemsL/LA001_tgt.mdl", "out.nbt", args)
-    }
+    runInteractive("problemsL/LA090_tgt.mdl", "out.nbt", listOf("layered"))
+//    if (args[0] == "batch") {
+//        val batchFilePath = args[1]
+//        args = args.drop(2)
+//        File(batchFilePath).readLines().parallelStream().forEach { line ->
+//            val parts = line.split(" ")
+//            val modelFilePath = parts[0]
+//            val traceFilePath = parts[1]
+//            runNonInteractive(modelFilePath, traceFilePath, args)
+//        }
+//    } else {
+//
+//    }
 }
 
 private fun createStrategy(modelFilePath: String, traceFilePath: String, args: List<String>): Strategy {
