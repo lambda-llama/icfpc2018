@@ -112,8 +112,8 @@ data class Matrix(val R: Int, val coordinates: ByteArray) {
         block: (Int, Int, Int) -> Unit
     ) {
         for (x in Math.min(from.x, to.x)..Math.max(from.x, to.x)) {
-            for (y in Math.min(from.y, to.y)..Math.min(from.y, to.y)) {
-                for (z in Math.min(from.z, to.z)..Math.min(from.z, to.z)) {
+            for (y in Math.min(from.y, to.y)..Math.max(from.y, to.y)) {
+                for (z in Math.min(from.z, to.z)..Math.max(from.z, to.z)) {
                     block(x, y, z)
                 }
             }
