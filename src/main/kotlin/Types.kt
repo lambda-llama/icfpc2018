@@ -6,6 +6,7 @@ import java.io.File
 import java.math.RoundingMode
 import java.nio.ByteBuffer
 import java.util.*
+import kotlin.collections.ArrayList
 import kotlin.coroutines.experimental.buildSequence
 import kotlin.math.abs
 import kotlin.math.max
@@ -233,6 +234,20 @@ data class Matrix(val R: Int, val coordinates: ByteArray) {
             Delta(0, 0, -1),
             Delta(0, -1, 0),
             Delta(-1, 0, 0))
+
+        val NEAR_COORD_DIFFERENCE: Array<Delta> = kotlin.run {
+            val res = mutableListOf<Delta>()
+            for (x in listOf(-1, 0, 1)) {
+                for (y in listOf(-1, 0, 1)) {
+                    for (z in listOf(-1, 0, 1)) {
+                        if (x == 0 && y == 0 && z == 0) continue
+                        if (x != 0 && y != 0 && z != 0) continue
+                        res.add(Delta(x, y, z))
+                    }
+                }
+            }
+            res.toTypedArray()
+        }
 
         fun zerosLike(other: Matrix): Matrix {
             return other.copy(coordinates = ByteArray(other.coordinates.size))

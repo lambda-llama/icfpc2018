@@ -52,8 +52,8 @@ class LayeredStrategy(val model: Model) : Strategy {
 
                 val (toFill, fillFrom) = layer
                         .asSequence()
-                        .sortedWith(compareBy({ it.y }, { (it - bot.pos).mlen }))
                         .mapNotNull { toFill -> fillableFrom(toFill)?.let { toFill to it } }
+                        .sortedWith(compareBy({ it.first.y }, { (it.second - bot.pos).mlen }))
                         .firstOrNull() ?: break
                 filled = true
                 layer.remove(toFill)
@@ -67,9 +67,11 @@ class LayeredStrategy(val model: Model) : Strategy {
             }
 
             for (coord in prevLayer) {
-                for (dxdydz in Matrix.DXDYDZ_MLEN1) {
+                for (dxdydz in Matrix.NEAR_COORD_DIFFERENCE) {
                     val testCoord = coord + dxdydz
-                    if (model.matrix[testCoord] && !state.matrix[testCoord]) {
+                    if (testCoord.isInBounds(model.matrix.R) &&
+                            model.matrix[testCoord] &&
+                            !state.matrix[testCoord]) {
                         layer.add(testCoord)
                     }
                 }
