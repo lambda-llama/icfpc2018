@@ -232,18 +232,26 @@ data class Matrix(val R: Int, val coordinates: ByteArray) {
 
 data class Model(val matrix: Matrix) {
     val bbox: Pair<Coord, Coord> get() {
-        var minCoord = Coord(matrix.R - 1, matrix.R - 1, matrix.R - 1)
-        var maxCoord = Coord.ZERO
-        val ord = Ordering.natural<Coord>()
-        matrix.forEach(maxCoord, minCoord) { x, y, z ->
+        var minX = matrix.R
+        var minY = matrix.R
+        var minZ = matrix.R
+        var maxX = 0
+        var maxY = 0
+        var maxZ = 0
+        matrix.forEach { x, y, z ->
             if (matrix[x, y, z]) {
-                val coord = Coord(x, y, z)
-                minCoord = ord.min(minCoord, coord)
-                maxCoord = ord.max(maxCoord, coord)
+                minX = Math.min(minX, x)
+                minY = Math.min(minY, y)
+                minZ = Math.min(minZ, z)
+                maxX = Math.max(maxX, x)
+                maxY = Math.max(maxY, y)
+                maxZ = Math.max(maxZ, z)
             }
         }
 
-        return ord.min(minCoord, maxCoord) to ord.max(minCoord, maxCoord)
+        val minCoord = Coord(Math.min(minX, maxX), Math.min(minY, maxY), Math.min(minZ, maxZ))
+        val maxCoord = Coord(Math.max(minX, maxX), Math.max(minY, maxY), Math.max(minZ, maxZ))
+        return minCoord to maxCoord
     }
 
     companion object {

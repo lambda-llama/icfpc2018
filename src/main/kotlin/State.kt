@@ -75,7 +75,7 @@ class State(
         val bot = bots[id]!!
         val oldPos = bot.pos
         val newPos = oldPos + delta
-        check(newPos.isInBounds(matrix.R))
+        check(newPos.isInBounds(matrix.R)) { "out of bounds: $newPos R = ${matrix.R}" }
 
         assert(matrix.isVoidRegion(oldPos, newPos))
 

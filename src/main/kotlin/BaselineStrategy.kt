@@ -56,7 +56,6 @@ fun multiSMove(initial: State, id: Int, target: Coord): Sequence<State> {
     return buildSequence {
         var ptr = found
         while (ptr !is LList.Nil) {
-            println(ptr)
             initial.sMove(id, (ptr as LList.Cons<SMove>).value.delta)
             initial.step()
             yield(initial)
@@ -88,12 +87,11 @@ class Baseline(private val model: Model) : Strategy {
         yieldAll(multiSMove(state, id, minCoord + initialDelta))
 
         val b = state[id]!!
-
         var x = minCoord.x
         var dx = 1
         var z = minCoord.z
         var dz = 1
-        for (y in 0..maxCoord.y) {
+        for (y in minCoord.y..maxCoord.y) {
             val targetX = if (dx > 0) maxCoord.x else minCoord.x
             while (x != targetX + dx) {
                 val targetZ = if (dz > 0) maxCoord.z else minCoord.z
