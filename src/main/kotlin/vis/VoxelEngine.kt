@@ -28,7 +28,6 @@ class VoxelEngine(
     lateinit var floorModel: Model
     lateinit var modelBatch: ModelBatch
     lateinit var environment: Environment
-    private var step: Boolean = false
     private var stage: Stage? = null
     private var info: Label? = null
 
@@ -130,7 +129,7 @@ class VoxelEngine(
             currentState.paused = !currentState.paused
         }
         if (Gdx.input.isKeyJustPressed(Input.Keys.SPACE)) {
-            step = true
+            currentState.step = true
         }
 
         if (Gdx.input.isKeyPressed(Input.Keys.EQUALS)

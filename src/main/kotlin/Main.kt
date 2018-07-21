@@ -69,8 +69,13 @@ private fun runInteractive(modelFilePath: String, traceFilePath: String, args: L
     thread {
         for (state in strategy.run()) {
             currentState.setState(state)
+            if (currentState.step) {
+                currentState.step = false
+                continue
+            }
             Thread.sleep(currentState.delayMs.toLong())
             while (currentState.paused) {
+                if (currentState.step) break
                 Thread.sleep(100)
             }
         }
@@ -92,7 +97,8 @@ data class Snapshot(
 data class CurrentState(
         @Volatile var snapshot: Snapshot,
         @Volatile var delayMs: Double = 250.0,
-        @Volatile var paused: Boolean = false
+        @Volatile var paused: Boolean = false,
+        @Volatile var step: Boolean = false
 ) : TraceListener {
     constructor(state: State) : this(Snapshot(state))
 
