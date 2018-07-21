@@ -7,4 +7,5 @@ object ChunkBlockSide {
     const val RIGHT = 32
     const val FRONT = 64
     const val BACK = 128
+    const val ALL = TOP or BOTTOM or LEFT or RIGHT or FRONT or BACK
 }

@@ -7,12 +7,11 @@ import com.badlogic.gdx.graphics.*
 import com.badlogic.gdx.graphics.g3d.*
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
 import com.badlogic.gdx.graphics.g3d.environment.DirectionalLight
-import io.github.lambdallama.Matrix
+import io.github.lambdallama.State
 import vis.floorModel
 import vis.toVisModel
-import java.io.File
 
-class VoxelEngine(private val model: io.github.lambdallama.Model) : ApplicationAdapter() {
+class VoxelEngine(private val state: State) : ApplicationAdapter() {
     lateinit var camera: PerspectiveCamera
     private var chunkModel: Model? = null
     private var instance: ModelInstance? = null
@@ -21,7 +20,7 @@ class VoxelEngine(private val model: io.github.lambdallama.Model) : ApplicationA
     lateinit var modelBatch: ModelBatch
     lateinit var environment: Environment
     @Volatile
-    private var nextModel: io.github.lambdallama.Model? = null
+    private var nextState: State? = null
 
     override fun create() {
         modelBatch = ModelBatch()
@@ -37,21 +36,21 @@ class VoxelEngine(private val model: io.github.lambdallama.Model) : ApplicationA
         environment.set(ColorAttribute(ColorAttribute.AmbientLight, 0.4f, 0.4f, 0.4f, 1f))
         environment.add(DirectionalLight().set(0.8f, 0.8f, 0.8f, -1f, -0.8f, -0.2f))
 
-        chunkModel = model.toVisModel()
+        chunkModel = state.toVisModel()
         instance = ModelInstance(chunkModel)
 
-        floorModel = model.floorModel()
+        floorModel = state.floorModel()
         floorInstance = ModelInstance(floorModel)
     }
 
-    fun updateModel(model: io.github.lambdallama.Model) {
-        nextModel = model
+    fun update(state: State) {
+        nextState = state
     }
 
     override fun render() {
-        val next = nextModel
+        val next = nextState
         if (next != null) {
-            nextModel = null
+            nextState = null
             chunkModel?.dispose()
             chunkModel = next.toVisModel()
             instance = ModelInstance(chunkModel)

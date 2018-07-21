@@ -10,12 +10,13 @@ import com.badlogic.gdx.graphics.g3d.attributes.IntAttribute
 import com.badlogic.gdx.graphics.g3d.utils.MeshPartBuilder
 import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder
 import com.badlogic.gdx.math.Vector3
+import io.github.lambdallama.Harmonics
 import io.github.lambdallama.Matrix
 
 private const val blockSize = .5f
 private const val halfSize = blockSize * 0.5f
 
-fun io.github.lambdallama.Model.toVisModel(): Model {
+fun io.github.lambdallama.State.toVisModel(): Model {
     val builder = ModelBuilder()
     builder.begin()
     val meshBuilder: MeshPartBuilder
@@ -27,14 +28,28 @@ fun io.github.lambdallama.Model.toVisModel(): Model {
     )
 
     val fb = FaceBuffer()
-    matrix.forEach { x, y, z -> addBlock(fb, matrix, x, y, z) }
-
+    matrix.forEach { x, y, z -> addBlock(fb, matrix, matrix.blockSides(x, y, z), x, y, z) }
     fb.addMeshFromBuffers(meshBuilder)
-    return builder.end()
 
+    builder.node()
+
+    val botMeshBuilder: MeshPartBuilder
+    botMeshBuilder = builder.part(
+            "bot",
+            GL20.GL_TRIANGLES,
+            (VertexAttributes.Usage.Position or VertexAttributes.Usage.Normal).toLong(),
+            Material(ColorAttribute.createDiffuse(
+                    if (harmonics == Harmonics.High) Color.FIREBRICK else Color.SKY))
+    )
+
+    val botFb = FaceBuffer()
+    bots.forEach { b -> addBlock(botFb, matrix, ChunkBlockSide.ALL, b.value.pos.x, b.value.pos.y, b.value.pos.z) }
+    botFb.addMeshFromBuffers(botMeshBuilder)
+
+    return builder.end()
 }
 
-fun io.github.lambdallama.Model.floorModel(): Model {
+fun io.github.lambdallama.State.floorModel(): Model {
     val builder = ModelBuilder()
     builder.begin()
     val meshBuilder = builder.part(
@@ -108,8 +123,7 @@ private class FaceBuffer {
     }
 }
 
-private fun addBlock(faceBuilder: FaceBuffer, matrix: Matrix, x: Int, y: Int, z: Int) {
-    val sides = matrix.blockSides(x, y, z)
+private fun addBlock(faceBuilder: FaceBuffer, matrix: Matrix, sides: Int, x: Int, y: Int, z: Int) {
     val halfSize = blockSize * .5f
 
     val position = Vector3(x.toFloat(), y.toFloat(), z.toFloat()).scl(blockSize)

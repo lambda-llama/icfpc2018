@@ -23,18 +23,16 @@ fun main(args: Array<String>) {
     }
     val model = Model.parse(File("problemsL/LA017_tgt.mdl"))
     val traceOutputStream = DataOutputStream(File("out.nbt").outputStream().buffered())
-    val engine = VoxelEngine(model)
+    val strategy = getStrategy(System.getenv("ARGS").split(" "), model)
+    val engine = VoxelEngine(strategy.state)
     thread {
-        val strategy = getStrategy(System.getenv("ARGS").split(" "), model)
         strategy.state.addTraceListener(TraceWriter(traceOutputStream))
-        var last = strategy.state
         for (state in strategy.run()) {
-            engine.updateModel(model.copy(matrix = state.matrix))
+            engine.update(state)
             Thread.sleep(10)
-            last = state
         }
 
-        println("Total energy: " + last.energy)
+        println("Total energy: " + strategy.state.energy)
     }
     LwjglApplication(engine, config)
 }
