@@ -7,6 +7,14 @@ import java.io.DataOutputStream
 import java.io.File
 import kotlin.concurrent.thread
 
+fun getStrategy(args: List<String>, model: Model): Strategy {
+    return when (args[0]) {
+        "baseline" -> Baseline(model)
+        "replay" -> ReplayStrategy(model, File(args[1]))
+        else -> throw Exception("Invalid strategy name")
+    }
+}
+
 fun main(args: Array<String>) {
     val config = LwjglApplicationConfiguration().apply {
         forceExit = false
@@ -17,12 +25,12 @@ fun main(args: Array<String>) {
     val traceOutputStream = DataOutputStream(File("out.nbt").outputStream().buffered())
     val engine = VoxelEngine(model)
     thread {
-        val strategy: Strategy = Baseline(model)
+        val strategy = getStrategy(System.getenv("ARGS").split(" "), model)
         strategy.state.addTraceListener(TraceWriter(traceOutputStream))
         var last = strategy.state
         for (state in strategy.run()) {
             engine.updateModel(model.copy(matrix = state.matrix))
-            Thread.sleep(300)
+            Thread.sleep(10)
             last = state
         }
 

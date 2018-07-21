@@ -22,6 +22,10 @@ data class Coord(val x: Int, val y: Int, val z: Int) : Comparable<Coord> {
         return Coord(x + delta.dx, y + delta.dy, z + delta.dz)
     }
 
+    operator fun minus(delta: DeltaCoord): Coord {
+        return this + (-delta)
+    }
+
     operator fun minus(coord: Coord): DeltaCoord {
         return DeltaCoord(x - coord.x, y - coord.y, z - coord.z)
     }
