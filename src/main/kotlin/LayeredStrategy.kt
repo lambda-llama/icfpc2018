@@ -1,25 +1,26 @@
 package io.github.lambdallama
 
 import java.util.*
+import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
 import kotlin.coroutines.experimental.buildSequence
 import kotlin.math.abs
-import kotlin.math.max
-import kotlin.math.min
 
 class LayeredStrategy(val model: Model) : Strategy {
     override val name: String = "Layered"
     override val state: State = State.forModel(model)
 
-    private fun reachableFrom(start: Coord): Sequence<Coord> {
-        return (model.matrix.sNeighborhood(start) + model.matrix.lNeighborhood(start))
-            .map { (_, n) -> n }
+    private fun reachableFrom(start: Coord): List<Coord> {
+        return (state.matrix.sNeighborhood(start) + state.matrix.lNeighborhood(start))
+                .map { (_, n) -> n }
+                .sortedBy { (start - it).mlen }
+                .toList()
     }
 
     private fun estimateCost(start: Coord, end: Coord): Int {
         return ((Math.abs(start.x - end.x) + 14) / 15) +
-            ((Math.abs(start.y - end.y) + 14) / 15) +
-            ((Math.abs(start.z - end.z) + 14) / 15)
+                ((Math.abs(start.y - end.y) + 14) / 15) +
+                ((Math.abs(start.z - end.z) + 14) / 15)
     }
 
     private fun goto(bot: BotView, target: Coord): List<Coord> {
