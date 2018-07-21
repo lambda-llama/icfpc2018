@@ -11,13 +11,10 @@ class GroundedStrategy(val model: Model) : Strategy {
     override val state: State = State.forModel(model)
 
     private fun fillableFrom(coord: Coord): Coord? {
-        for (d in NEAR_COORD_DIFFERENCE) {
-            val option = coord + d
-            if (option.isInBounds(state.matrix.R) && !state.matrix[option]) {
-                return option
-            }
-        }
-        return null
+        return NEAR_COORD_DIFFERENCE
+                .map { coord + it }
+                .filter { it.isInBounds(state.matrix.R) && !state.matrix[it] }
+                .maxBy { it.y }
     }
 
     override fun run(): Sequence<State> = buildSequence {
@@ -35,7 +32,7 @@ class GroundedStrategy(val model: Model) : Strategy {
 
         while (grounded.isNotEmpty()) {
             val (toFill, fillFrom) = grounded.mapNotNull { toFill -> fillableFrom(toFill)?.let { toFill to it } }
-                    .sortedWith(compareBy({ it.first.y }, { (it.second - bot.pos).mlen }))
+                    .sortedWith(compareBy({ it.first.y }, { -it.second.y }, { (it.second - bot.pos).mlen }))
                     .firstOrNull() ?: error("unfillable grounded cell")
 
             grounded.remove(toFill)

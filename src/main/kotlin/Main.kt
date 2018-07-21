@@ -39,7 +39,7 @@ fun main(args: Array<String>) {
             args = args.drop(2)
             runNonInteractive(modelFilePath, traceFilePath, args)
         }
-        else -> runNonInteractive("problemsF/FA021_tgt.mdl", "out.nbt", listOf("grounded"))
+        else -> runInteractive("problemsF/FA011_tgt.mdl", "out.nbt", listOf("grounded"))
     }
 }
 
