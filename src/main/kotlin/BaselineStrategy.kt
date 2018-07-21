@@ -5,18 +5,27 @@ import kotlin.coroutines.experimental.buildSequence
 
 sealed class LList<T> {
     data class Cons<T>(val value: T, val next: LList<T>) : LList<T>() {
-        override fun reverse() = Cons(value, next.reverse())
-
         override fun toString() = "$value->$next"
+
+        override fun reversed(): LList<T> {
+            var ptr: LList<T> = this
+            var acc: LList<T> = Nil()
+            while (ptr !is Nil<*>) {
+                acc = Cons((ptr as Cons<T>).value, acc)
+                ptr = ptr.next
+            }
+
+            return acc
+        }
     }
 
     class Nil<T> : LList<T>() {
-        override fun reverse() = this
-
         override fun toString() = "Nil"
+
+        override fun reversed() = this
     }
 
-    abstract fun reverse(): LList<T>
+    abstract fun reversed(): LList<T>
 }
 
 fun multiSMove(initial: State, id: Int, target: Coord): Sequence<State> {
@@ -24,11 +33,13 @@ fun multiSMove(initial: State, id: Int, target: Coord): Sequence<State> {
 
     val seen = HashSet<Coord>()
     val next = HashSet<Coord>()
-    val q = ArrayDeque<Pair<State, LList<SMove>>>()
+    val q = PriorityQueue<Pair<State, LList<Command>>>(compareBy {
+        it.first.energy + (it.first[id]!!.pos - target).mlen
+    })
     q.add(initial.shallowSplit() to LList.Nil())
-    var found: LList<SMove>? = null
+    var found: LList<Command>? = null
     while (q.isNotEmpty()) {
-        val (state, commands) = q.pollFirst()
+        val (state, commands) = q.poll()
         val b = state[id]!!
         if (b.pos == target) {
             found = commands
@@ -37,10 +48,10 @@ fun multiSMove(initial: State, id: Int, target: Coord): Sequence<State> {
 
         seen.add(b.pos)
 
-        for ((command, n) in state.matrix.sNeighborhood(b.pos)) {
+        for ((command, n) in state.matrix.sNeighborhood(b.pos) + state.matrix.lNeighborhood(b.pos)) {
             if (n !in seen && n !in next) {
                 val split = state.shallowSplit()
-                split.sMove(b.id, command.delta)
+                command(split, b.id)
                 split.step()
                 q.add(split to LList.Cons(command, commands))
                 next.add(n)
@@ -54,9 +65,9 @@ fun multiSMove(initial: State, id: Int, target: Coord): Sequence<State> {
 
     // Mutate initial in-place!
     return buildSequence {
-        var ptr = found
+        var ptr = found.reversed()
         while (ptr !is LList.Nil) {
-            initial.sMove(id, (ptr as LList.Cons<SMove>).value.delta)
+            (ptr as LList.Cons<Command>).value(initial, id)
             initial.step()
             yield(initial)
             ptr = ptr.next
@@ -97,15 +108,16 @@ class Baseline(private val model: Model) : Strategy {
                 val targetZ = if (dz > 0) maxCoord.z else minCoord.z
                 while (z != targetZ + dz) {
                     val coord = Coord(x, y, z)
-                    val delta = coord - b.pos
-                    if (model.matrix[coord]) {
-                        state.fill(id, delta)
-                        state.step()
-                        yield(state)
-                    }
+                    val bPos = b.pos
+                    val delta = coord - bPos
                     state.sMove(id, delta)
                     state.step()
                     yield(state)
+                    if (model.matrix[bPos]) {
+                        state.fill(id, -delta)
+                        state.step()
+                        yield(state)
+                    }
                     z += dz
                 }
                 x += dx

@@ -74,7 +74,7 @@ class State(
     }
 
     fun sMove(id: Int, delta: DeltaCoord) {
-        check(delta.isLongLinear)
+        check(delta.isLongLinear) { "not long-linear: $delta" }
         val bot = checkNotNull(bots[id])
         val oldPos = bot.pos
         val newPos = oldPos + delta
