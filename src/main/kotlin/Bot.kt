@@ -12,10 +12,7 @@ interface BotView {
 data class Bot(
     override val id: Int,
     override var pos: Coord,
-    var seeds: SortedSet<Int>)
-    : BotView {
-
-    override fun seeds(): Sequence<Int> {
-        return seeds.asSequence()
-    }
+    var seeds: SortedSet<Int>
+) : BotView {
+    override fun seeds() = seeds.asSequence()
 }

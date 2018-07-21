@@ -1,33 +1,50 @@
 package io.github.lambdallama
 
+import java.util.*
+
 class State(
     val matrix: Matrix,
-    val bots: MutableMap<Int, Bot>
+    val bots: MutableMap<Int, Bot>,
+    harmonics: Harmonics = Harmonics.Low,
+    energy: Long = 0,
+    private var expectedBotActionsThisStep: Int = bots.count()
 ) {
     private val traceListeners: ArrayList<TraceListener> = ArrayList()
 
     private val botCommands: HashMap<Int, Command> = HashMap()
-    private var expectedBotActionsThisStep: Int = bots.count()
-    var harmonics: Harmonics = Harmonics.Low
+    var harmonics: Harmonics = harmonics
         private set
-    var energy: Long = 0
+    var energy: Long = energy
         private set
 
     /* Private methods */
 
     /* General public methods */
 
+    fun split() = State(
+        matrix.copy(coordinates = matrix.coordinates.clone()),
+        bots.mapValues { it.value.copy() } as MutableMap<Int, Bot>,
+        harmonics,
+        energy,
+        expectedBotActionsThisStep)
+
+    fun shallowSplit() = State(
+        matrix,
+        bots.mapValues { it.value.copy() } as MutableMap<Int, Bot>,
+        harmonics,
+        energy,
+        expectedBotActionsThisStep)
+
     fun addTraceListener(traceListener: TraceListener) {
         traceListeners.add(traceListener)
     }
 
-    fun botIds(): Sequence<Int> {
-        return bots.keys.asSequence()
-    }
+    fun botIds(): Sequence<Int> = bots.keys.asSequence()
 
-    fun getBot(id: Int): BotView? {
-        return bots[id]
-    }
+    operator fun get(id: Int): BotView? = bots[id]
+
+    @Deprecated(message = "use this[id]", replaceWith = ReplaceWith("this[id]"))
+    fun getBot(id: Int): BotView? = this[id]
 
     /* Commands */
 
@@ -156,6 +173,23 @@ class State(
         for (listener in traceListeners) {
             listener.onStep(commands)
         }
+    }
+
+    override fun equals(other: Any?): Boolean {
+        return when {
+            this === other -> true
+            other !is State -> false
+            else ->
+                energy == other.energy &&
+                    harmonics == other.harmonics &&
+                    expectedBotActionsThisStep == other.expectedBotActionsThisStep &&
+                    matrix == other.matrix &&
+                    bots == other.bots
+        }
+    }
+
+    override fun hashCode(): Int {
+        return Objects.hash(energy, harmonics, expectedBotActionsThisStep, matrix, bots)
     }
 
     companion object {

@@ -13,8 +13,6 @@ import kotlin.math.max
 
 
 data class Coord(val x: Int, val y: Int, val z: Int) : Comparable<Coord> {
-    val volume: Int get() = x * y * z
-
     fun isInBounds(R: Int): Boolean {
         return x in 0 until R && y in 0 until R && z in 0 until R
     }
