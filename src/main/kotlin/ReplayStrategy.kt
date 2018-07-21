@@ -33,9 +33,9 @@ class ReplayStrategy(val model: Model, val trace: File) : Strategy {
                         if (fusions.containsKey(id)) {
                             state.fusion(id, fusions[id]!!)
                         } else {
-                            val sBotPos = state.getBot(id)!!.pos + command.delta
+                            val sBotPos = state[id]!!.pos + command.delta
                             val sBotId = state.botIds()
-                                    .map { id -> state.getBot(id)!! }
+                                    .map { id -> state[id]!! }
                                     .single { b -> b.pos == sBotPos }
                                     .id
                             fusions[sBotId] = id
@@ -45,9 +45,9 @@ class ReplayStrategy(val model: Model, val trace: File) : Strategy {
                         if (fusions.containsKey(id)) {
                             state.fusion(fusions[id]!!, id)
                         } else {
-                            val pBotPos = state.getBot(id)!!.pos + command.delta
+                            val pBotPos = state[id]!!.pos + command.delta
                             val pBotId = state.botIds()
-                                    .map { id -> state.getBot(id)!! }
+                                    .map { id -> state[id]!! }
                                     .single { b -> b.pos == pBotPos }
                                     .id
                             fusions[pBotId] = id

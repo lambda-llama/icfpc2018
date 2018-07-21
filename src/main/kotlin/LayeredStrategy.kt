@@ -107,7 +107,7 @@ class LayeredStrategy(val model: Model) : Strategy {
             }
         }
 
-        val bot = state.getBot(1)!!
+        val bot = state[1]!!
 
         do {
             val prevLayer = layer.toSet()

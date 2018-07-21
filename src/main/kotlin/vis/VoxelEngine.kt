@@ -81,7 +81,7 @@ class VoxelEngine(
                 .appendln("Last step commands:")
 
         for (pair in snapshot.lastCommands) {
-            sb.appendln("      ${pair.key} ${state.getBot(pair.key)?.pos}: ${pair.value}")
+            sb.appendln("      ${pair.key} ${state[pair.key]?.pos}: ${pair.value}")
         }
 
         sb

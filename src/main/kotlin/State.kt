@@ -43,9 +43,6 @@ class State(
 
     operator fun get(id: Int): BotView? = bots[id]
 
-    @Deprecated(message = "use this[id]", replaceWith = ReplaceWith("this[id]"))
-    fun getBot(id: Int): BotView? = this[id]
-
     /* Commands */
 
     fun halt(id: Int) {
