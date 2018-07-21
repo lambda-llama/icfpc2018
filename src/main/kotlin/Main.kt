@@ -24,7 +24,7 @@ fun main(args: Array<String>) {
     }
     val model = Model.parse(File("problemsL/LA017_tgt.mdl"))
     val traceOutputStream = DataOutputStream(File("out.nbt").outputStream().buffered())
-    val strategy = getStrategy(System.getenv("ARGS").split(" "), model)
+    val strategy = getStrategy((System.getenv("ARGS") ?: "baseline").split(" "), model)
     val engine = VoxelEngine(strategy.name, strategy.state)
     strategy.state.addTraceListener(TraceWriter(traceOutputStream))
     strategy.state.addTraceListener(engine)
