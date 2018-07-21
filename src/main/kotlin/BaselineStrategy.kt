@@ -28,6 +28,8 @@ sealed class LList<T> {
     }
 
     abstract fun reversed(): LList<T>
+
+    fun cons(value: T): LList<T> = LList.Cons(value, this)
 }
 
 private fun State.heuristic(id: Int, target: Coord): Int {
@@ -67,7 +69,23 @@ fun multiSLMove(initial: State, id: Int, target: Coord): Sequence<State> {
                 split.step()
                 val h = split.heuristic(b.id, target)
                 if (h < heuristic[n]) {
-                    q.add(split to LList.Cons(command, commands))
+                    q.add(split to commands.cons(command))
+                    heuristic.put(n, h)
+                    next[n] = true
+                }
+            }
+        }
+
+        for ((gtd, n) in state.matrix.void2SNeighborhood(b.pos)) {
+            if (!next[b.pos]) {
+                val split = state.shallowSplit()
+                for (command in gtd) {
+                    command(split, id)
+                    split.step()
+                }
+                val h = split.heuristic(b.id, target)
+                if (h < heuristic[n]) {
+                    q.add(split to gtd.fold(commands) { ptr, command -> ptr.cons(command) })
                     heuristic.put(n, h)
                     next[n] = true
                 }

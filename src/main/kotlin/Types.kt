@@ -71,6 +71,19 @@ data class Delta(val dx: Int, val dy: Int, val dz: Int) : Comparable<Delta> {
 }
 
 data class Matrix(val R: Int, val coordinates: ByteArray) {
+    /** All coords reachable from a given one via Void and 2-step SMove. */
+    fun void2SNeighborhood(coord: Coord): Sequence<Pair<Array<Command>, Coord>> {
+        return DXDYDZ_MLEN1.asSequence().mapNotNull { delta ->
+            val n1 = coord + delta
+            val n2 = n1 + delta
+            if (n2.isInBounds(R) && this[n1]) {
+                arrayOf(Void(delta), SMove(delta * 2), Fill(-delta)) to n2
+            } else {
+                null
+            }
+        }
+    }
+
     /** All coords reachable from a given one via SMove. */
     fun sNeighborhood(coord: Coord): Sequence<Pair<SMove, Coord>> = buildSequence {
         for (dir in DXDYDZ_MLEN1) {
