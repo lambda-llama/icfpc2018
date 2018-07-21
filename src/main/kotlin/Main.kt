@@ -16,7 +16,7 @@ fun getStrategy(args: List<String>, model: Model): Strategy {
         "baseline" -> Baseline(model)
         "replay" -> ReplayStrategy(model, File(args[1]))
         "layered" -> LayeredStrategy(model)
-        else -> throw Exception("Invalid strategy name")
+        else -> throw Exception("Invalid strategy name `${args[0]}`")
     }
 }
 

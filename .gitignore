@@ -3,4 +3,6 @@
 build/
 out/
 *.nbt
+icfpc2018-submissions/
 submission/
+submission.zip
