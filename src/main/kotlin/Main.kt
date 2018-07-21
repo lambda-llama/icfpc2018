@@ -24,12 +24,12 @@ fun main(args: Array<String>) {
     val model = Model.parse(File("problemsL/LA017_tgt.mdl"))
     val traceOutputStream = DataOutputStream(File("out.nbt").outputStream().buffered())
     val strategy = getStrategy(System.getenv("ARGS").split(" "), model)
-    val engine = VoxelEngine(strategy.state)
+    val engine = VoxelEngine(strategy.name, strategy.state)
+    strategy.state.addTraceListener(TraceWriter(traceOutputStream))
+    strategy.state.addTraceListener(engine)
     thread {
-        strategy.state.addTraceListener(TraceWriter(traceOutputStream))
         for (state in strategy.run()) {
             engine.update(state)
-            Thread.sleep(10)
         }
 
         println("Total energy: " + strategy.state.energy)

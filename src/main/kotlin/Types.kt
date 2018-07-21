@@ -58,6 +58,10 @@ data class DeltaCoord(val dx: Int, val dy: Int, val dz: Int) : Comparable<DeltaC
         .compare(dy, other.dy)
         .compare(dz, other.dz)
         .result()
+
+    override fun toString(): String {
+        return "<$dx,$dy,$dz>"
+    }
 }
 
 data class Matrix(val R: Int, val coordinates: ByteArray) {
