@@ -4,11 +4,11 @@ import java.util.*
 
 class State(
     val matrix: Matrix,
-    val bots: MutableMap<Int, Bot>,
+    val bots: Array<Bot?>,
 //    private val volatile: Matrix = Matrix.zerosLike(matrix),
     harmonics: Harmonics = Harmonics.Low,
     energy: Long = 0,
-    private var expectedBotActionsThisStep: Int = bots.count()
+    private var expectedBotActionsThisStep: Int = bots.count { it != null }
 ) {
     private val traceListeners: ArrayList<TraceListener> = ArrayList()
 
@@ -24,14 +24,14 @@ class State(
 
     fun split() = State(
         matrix.copy(coordinates = matrix.coordinates.clone()),
-        bots.mapValues { it.value.copy() } as MutableMap<Int, Bot>,
+        Array(bots.size) { bots[it]?.copy() },
         harmonics,
         energy,
         expectedBotActionsThisStep)
 
     fun shallowSplit() = State(
         matrix,
-        bots.mapValues { it.value.copy() } as MutableMap<Int, Bot>,
+        Array(bots.size) { bots[it]?.copy() },
         harmonics,
         energy,
         expectedBotActionsThisStep)
@@ -40,19 +40,22 @@ class State(
         traceListeners.add(traceListener)
     }
 
-    fun botIds(): Sequence<Int> = bots.keys.asSequence()
+    fun botIds(): Sequence<Int> = bots.asSequence()
+        .withIndex()
+        .filterNot { it.value == null }
+        .map { it.index }
 
     operator fun get(id: Int): BotView? = bots[id]
 
     /* Commands */
 
     fun halt(id: Int) {
-        check(bots.count() == 1)
+        check(bots.size == 1)
         val bot = checkNotNull(bots[id])
         check(bot.pos == Coord.ZERO)
         check(harmonics == Harmonics.Low)
 
-        bots.remove(id)
+        bots[id] = null
         botCommands[id] = Halt
 //        volatile[bot.pos] = true
     }
@@ -77,7 +80,7 @@ class State(
         val newPos = oldPos + delta
 
 //        volatile[oldPos, newPos] = true
-//        assert(matrix.isVoidRegion(oldPos, newPos))
+        assert(matrix.isVoidRegion(oldPos, newPos))
         assert(newPos.isInBounds(matrix.R)) { "out of bounds: $newPos R = ${matrix.R}" }
 
         bot.pos = newPos
@@ -95,8 +98,8 @@ class State(
         assert(midPos.isInBounds(matrix.R)) { "out of bounds: $midPos R = ${matrix.R}" }
         assert(newPos.isInBounds(matrix.R)) { "out of bounds: $newPos R = ${matrix.R}" }
 
-//        assert(matrix.isVoidRegion(oldPos, midPos))
-//        assert(matrix.isVoidRegion(midPos, newPos))
+        assert(matrix.isVoidRegion(oldPos, midPos))
+        assert(matrix.isVoidRegion(midPos, newPos))
 //        volatile[oldPos, midPos] = true
 //        volatile[midPos, newPos] = true
 
@@ -150,7 +153,7 @@ class State(
         val sBot = checkNotNull(bots[sId])
         check((pBot.pos - sBot.pos).isNear)
 
-        bots.remove(sBot.id)
+        bots[sBot.id] = null
         pBot.seeds.add(sBot.id)
         pBot.seeds.addAll(sBot.seeds)
         energy -= 24
@@ -169,7 +172,7 @@ class State(
         energy += (if (harmonics == Harmonics.High) 30 else 3) * volume
         energy += 20 * expectedBotActionsThisStep
 
-        expectedBotActionsThisStep = bots.count()
+        expectedBotActionsThisStep = bots.count { it != null }
 
         if (traceListeners.isNotEmpty()) {
             val commands = botCommands.toSortedMap()
@@ -190,7 +193,7 @@ class State(
                     harmonics == other.harmonics &&
                     expectedBotActionsThisStep == other.expectedBotActionsThisStep &&
                     matrix == other.matrix &&
-                    bots == other.bots
+                    Arrays.equals(bots, other.bots)
         }
     }
 
@@ -201,9 +204,9 @@ class State(
     companion object {
         fun forModel(model: Model): State {
             // TODO: use the model matrix?
-            return State(
-                Matrix.zerosLike(model.matrix),
-                mutableMapOf(1 to Bot(1, Coord.ZERO, (2..20).toSortedSet())))
+            val bots = Array<Bot?>(20 + 1) { null }
+            bots[1] = Bot(1, Coord.ZERO, (2..20).toSortedSet())
+            return State(Matrix.zerosLike(model.matrix), bots)
         }
     }
 }

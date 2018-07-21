@@ -105,7 +105,7 @@ data class CurrentState(
         old.copy(lastCommands = commands, totalSteps = old.totalSteps + 1)
     }
 
-    fun setState(state: State) = updateSnapshot { old -> old.copy(state = cloneState(state)) }
+    fun setState(state: State) = updateSnapshot { old -> old.copy(state = state.split()) }
 
     private fun updateSnapshot(f: (Snapshot) -> Snapshot) {
         synchronized(this) {
@@ -113,10 +113,3 @@ data class CurrentState(
         }
     }
 }
-
-fun cloneState(state: State): State = State(
-        Matrix(state.matrix.R, Arrays.copyOf(state.matrix.coordinates, state.matrix.coordinates.size)),
-        state.bots.map { (k, b) ->
-            k to Bot(b.id, b.pos, TreeSet(b.seeds))
-        }.toMap(HashMap())
-)

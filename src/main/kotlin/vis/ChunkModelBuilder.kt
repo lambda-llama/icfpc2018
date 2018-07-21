@@ -43,7 +43,11 @@ fun io.github.lambdallama.State.toVisModel(): Model {
     )
 
     val botFb = FaceBuffer()
-    bots.forEach { b -> addBlock(botFb, matrix, ChunkBlockSide.ALL, b.value.pos.x, b.value.pos.y, b.value.pos.z) }
+    bots.forEach { b ->
+        if (b != null) {
+            addBlock(botFb, matrix, ChunkBlockSide.ALL, b.pos.x, b.pos.y, b.pos.z)
+        }
+    }
     botFb.addMeshFromBuffers(botMeshBuilder)
 
     return builder.end()
