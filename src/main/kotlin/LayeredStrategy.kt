@@ -8,23 +8,11 @@ class LayeredStrategy(val model: Model) : Strategy {
     override val state: State = State.forModel(model)
 
     private fun fillableFrom(coord: Coord): Coord? {
-        val r = state.matrix.R - 1
-        val arr = arrayOf(0, -1, 1)
-        for (y in 1 downTo -1) {
-            for (x in arr) {
-                for (z in arr) {
-                    if (x < 0 || y < 0 || z < 0 || x > r || y > r || z > r) {
-                        continue
-                    }
-                    val delta = Delta(x, y, z)
-                    if (!delta.isNear) {
-                        continue
-                    }
-                    val option = coord + delta
-                    if (!state.matrix[option]) {
-                        return option
-                    }
-                }
+        for (delta in Matrix.NEAR_COORD_DIFFERENCE) {
+            check(delta.isNear)
+            val option = coord + delta
+            if (option.isInBounds(state.matrix.R) && !state.matrix[option]) {
+                return option
             }
         }
         return null
