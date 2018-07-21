@@ -250,6 +250,20 @@ data class Matrix(val R: Int, val coordinates: ByteArray) {
             res.toTypedArray()
         }
 
+        val NEAR_COORD_DIFFERENCE: Array<DeltaCoord> = kotlin.run {
+            val res = mutableListOf<DeltaCoord>()
+            for (x in listOf(-1, 0, 1)) {
+                for (y in listOf(-1, 0, 1)) {
+                    for (z in listOf(-1, 0, 1)) {
+                        if (x == 0 && y == 0 && z == 0) continue
+                        if (x != 0 && y != 0 && z != 0) continue
+                        res.add(DeltaCoord(x, y, z))
+                    }
+                }
+            }
+            res.toTypedArray()
+        }
+
         fun zerosLike(other: Matrix): Matrix {
             return other.copy(coordinates = ByteArray(other.coordinates.size))
         }

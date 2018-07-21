@@ -49,7 +49,7 @@ fun io.github.lambdallama.State.toVisModel(): Model {
     }
     botFb.addMeshFromBuffers(botMeshBuilder)
 
-    val highlight: List<Coord> = listOf(Coord(52,23,35), Coord(50,22,34))
+    val highlight: List<Coord> = listOf()
     val hiFb = FaceBuffer()
     highlight.forEach { pos ->
         addBlock(hiFb, matrix, ChunkBlockSide.ALL, pos.x, pos.y, pos.z)
