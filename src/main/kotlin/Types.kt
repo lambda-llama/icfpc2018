@@ -257,7 +257,7 @@ data class Model(val matrix: Matrix) {
     companion object {
         fun parse(path: File): Model {
             val buf = ByteBuffer.wrap(path.readBytes())
-            val R = buf.get().toInt()
+            val R = buf.get().toInt() and 0xff
             val shape = IntMath.divide(R * R * R, 8, RoundingMode.CEILING)
             val coordinates = ByteArray(shape).apply { buf.get(this) }
             if (path.extension == "xmdl") {
