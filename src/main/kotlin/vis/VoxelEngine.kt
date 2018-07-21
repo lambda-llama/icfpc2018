@@ -22,7 +22,7 @@ import io.github.lambdallama.Snapshot
 
 class VoxelEngine(
         private val strategyName: String,
-        val currentState: CurrentState
+        private val currentState: CurrentState
 ) : ApplicationAdapter() {
     private var chunkModel: Model? = null
     lateinit var floorModel: Model
@@ -126,7 +126,6 @@ class VoxelEngine(
 
     private fun keyboardControls() {
         cntl.update()
-        val speed = 2f
         if (Gdx.input.isKeyPressed(Input.Keys.Z)) {
             currentState.delayMs *= 0.95
         }
