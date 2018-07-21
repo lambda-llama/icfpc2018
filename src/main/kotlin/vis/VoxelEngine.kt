@@ -35,6 +35,7 @@ class VoxelEngine(private val strategyName: String, private var state: State)
     private var stage: Stage? = null
     private var info: Label? = null
     private var lastCommands: SortedMap<Int, Command> = TreeMap()
+    private var totalSteps: Int = 0
 
     override fun create() {
         modelBatch = ModelBatch()
@@ -74,6 +75,7 @@ class VoxelEngine(private val strategyName: String, private var state: State)
     override fun onStep(commands: SortedMap<Int, Command>) {
         synchronized(this) {
             lastCommands = commands
+            totalSteps += 1
         }
     }
 
@@ -83,12 +85,13 @@ class VoxelEngine(private val strategyName: String, private var state: State)
                 .appendln("Refresh interval: ${sleepTimeMs}ms" + (if (paused) " (paused)" else ""))
                 .appendln("Number of bots: ${state.bots.count()}")
                 .appendln("Harmonics: ${state.harmonics}")
+                .appendln("Steps: ${totalSteps}")
                 .appendln("Energy: ${state.energy}")
                 .appendln("")
                 .appendln("Last step commands:")
 
         for (pair in lastCommands) {
-            sb.appendln("      ${pair.key}: ${pair.value}")
+            sb.appendln("      ${pair.key} ${state.getBot(pair.key)?.pos}: ${pair.value}")
         }
 
         sb

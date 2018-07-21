@@ -31,7 +31,7 @@ class Baseline(val model: Model) : Strategy {
     override fun run(): Sequence<State> = buildSequence {
         yield(state)
         val (minCoord, maxCoord) = model.bbox
-        val b = state.getBot(1)
+        val b = state.getBot(1)!!
 
         state.flip(b.id)
         state.step()

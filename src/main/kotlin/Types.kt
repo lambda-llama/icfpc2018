@@ -36,6 +36,10 @@ data class Coord(val x: Int, val y: Int, val z: Int) : Comparable<Coord> {
         .compare(z, other.z)
         .result()
 
+    override fun toString(): String {
+        return "($x,$y,$z)"
+    }
+
     companion object {
         val ZERO = Coord(0, 0, 0)
     }

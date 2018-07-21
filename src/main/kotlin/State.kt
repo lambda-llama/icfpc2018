@@ -25,45 +25,45 @@ class State(
         return bots.keys.asSequence()
     }
 
-    fun getBot(id: Int): BotView {
-        return bots[id] as BotView
+    fun getBot(id: Int): BotView? {
+        return bots[id]
     }
 
     /* Commands */
 
     fun halt(id: Int) {
-        assert(bots.contains(id))
-        assert(bots.count() == 1)
+        check(bots.contains(id))
+        check(bots.count() == 1)
         val bot = bots[id]!!
-        assert(bot.pos == Coord.ZERO)
-        assert(harmonics == Harmonics.Low)
+        check(bot.pos == Coord.ZERO)
+        check(harmonics == Harmonics.Low)
 
         bots.remove(id)
         botCommands[id] = Halt
     }
 
     fun wait(id: Int) {
-        assert(bots.contains(id))
+        check(bots.contains(id))
 
         botCommands[id] = Wait
     }
 
     fun flip(id: Int) {
-        assert(bots.contains(id))
+        check(bots.contains(id))
 
         harmonics = harmonics.flip()
         botCommands[id] = Flip
     }
 
     fun sMove(id: Int, delta: DeltaCoord) {
-        assert(bots.contains(id))
-        assert(delta.isLongLinear)
+        check(bots.contains(id))
+        check(delta.isLongLinear)
         val bot = bots[id]!!
         val oldPos = bot.pos
         val newPos = oldPos + delta
-        assert(newPos.isInBounds(matrix.R))
+        check(newPos.isInBounds(matrix.R))
 
-        matrix.forEach(oldPos, newPos) { x, y, z -> assert(!matrix[x, y, z]) }
+        matrix.forEach(oldPos, newPos) { x, y, z -> check(!matrix[x, y, z]) }
 
         bot.pos = newPos
         energy += 2 * delta.mlen
@@ -71,18 +71,18 @@ class State(
     }
 
     fun lMove(id: Int, delta0: DeltaCoord, delta1: DeltaCoord) {
-        assert(bots.contains(id))
-        assert(delta0.isShortLinear)
-        assert(delta1.isShortLinear)
+        check(bots.contains(id))
+        check(delta0.isShortLinear)
+        check(delta1.isShortLinear)
         val bot = bots[id]!!
         val oldPos = bot.pos
         val midPos = oldPos + delta0
         val newPos = midPos + delta1
-        assert(midPos.isInBounds(matrix.R))
-        assert(newPos.isInBounds(matrix.R))
+        check(midPos.isInBounds(matrix.R))
+        check(newPos.isInBounds(matrix.R))
 
-        matrix.forEach(oldPos, midPos) { x, y, z -> assert(!matrix[x, y, z]) }
-        matrix.forEach(midPos, newPos) { x, y, z -> assert(!matrix[x, y, z]) }
+        matrix.forEach(oldPos, midPos) { x, y, z -> check(!matrix[x, y, z]) }
+        matrix.forEach(midPos, newPos) { x, y, z -> check(!matrix[x, y, z]) }
 
         bot.pos = newPos
         energy += 2 * (delta0.mlen + 2 + delta1.mlen)
@@ -90,11 +90,11 @@ class State(
     }
 
     fun fill(id: Int, delta: DeltaCoord) {
-        assert(bots.contains(id))
-        assert(delta.isNear)
+        check(bots.contains(id))
+        check(delta.isNear)
         val bot = bots[id]!!
         val fillPos = bot.pos + delta
-        assert(fillPos.isInBounds(matrix.R))
+        check(fillPos.isInBounds(matrix.R))
 
         if (matrix[fillPos]) {
             energy += 6
@@ -106,14 +106,14 @@ class State(
     }
 
     fun fission(id: Int, delta: DeltaCoord, m: Int) {
-        assert(bots.contains(id))
-        assert(delta.isNear)
+        check(bots.contains(id))
+        check(delta.isNear)
         val bot = bots[id]!!
-        assert(bot.seeds.any())
+        check(bot.seeds.any())
         val newBotPos = bot.pos + delta
-        assert(newBotPos.isInBounds(matrix.R))
-        assert(!matrix[newBotPos])
-        assert(m < bot.seeds.count())
+        check(newBotPos.isInBounds(matrix.R))
+        check(!matrix[newBotPos])
+        check(m < bot.seeds.count())
 
         val split = bot.seeds.elementAt(m) + 1
         val newBotSeeds = bot.seeds.headSet(split)
@@ -128,11 +128,11 @@ class State(
     }
 
     fun fusion(pId: Int, sId: Int) {
-        assert(bots.contains(pId))
-        assert(bots.contains(sId))
+        check(bots.contains(pId))
+        check(bots.contains(sId))
         val pBot = bots[pId]!!
         val sBot = bots[sId]!!
-        assert((pBot.pos - sBot.pos).isNear)
+        check((pBot.pos - sBot.pos).isNear)
 
         bots.remove(sBot.id)
         pBot.seeds.add(sBot.id)
@@ -143,7 +143,7 @@ class State(
     }
 
     fun step() {
-        assert(botCommands.count() == expectedBotActionsThisStep)
+        check(botCommands.count() == expectedBotActionsThisStep)
 
         val volume = matrix.R * matrix.R * matrix.R
         energy += (if (harmonics == Harmonics.High) 30 else 3) * volume
