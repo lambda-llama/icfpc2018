@@ -31,7 +31,7 @@ sealed class LList<T> {
 }
 
 private fun State.heuristic(id: Int, target: Coord): Long {
-    return energy + (this[id]!!.pos - target).mlen
+    return energy + (this[id]!!.pos - target).clen
 }
 
 /**
@@ -42,9 +42,13 @@ private fun State.heuristic(id: Int, target: Coord): Long {
 fun multiSLMove(initial: State, id: Int, target: Coord): Sequence<State> {
     require(target.isInBounds(initial.matrix.R))
 
+    val heuristic = TObjectLongHashMap<Coord>(
+        Constants.DEFAULT_CAPACITY,
+        Constants.DEFAULT_LOAD_FACTOR,
+        Long.MAX_VALUE)
     val next = HashSet<Coord>()
     val meta = HashMap<Coord, Pair<State, LList<Command>>>()
-    val q = PriorityQueue<Coord>(compareBy { meta[it]!!.first.heuristic(id, target) })
+    val q = PriorityQueue<Coord>(compareBy { heuristic[it] })
     meta[initial[id]!!.pos] = initial to LList.Nil()
     q.add(initial[id]!!.pos)
     var found: LList<Command>? = null
@@ -63,8 +67,10 @@ fun multiSLMove(initial: State, id: Int, target: Coord): Sequence<State> {
                 val split = state.shallowSplit()
                 command(split, id)
                 split.step()
-                if (n !in meta || split.heuristic(id, target) < meta[n]!!.first.heuristic(id, target)) {
+                val h = split.heuristic(id, target)
+                if (n !in meta || h < heuristic[n]) {
                     meta[n] = split to LList.Cons(command, commands)
+                    heuristic.put(n, h)
                     q.add(n)
                     next.add(n)
                 }

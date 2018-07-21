@@ -1,12 +1,11 @@
 package io.github.lambdallama
 
-import com.google.common.collect.Sets
 import java.util.*
 
 class State(
     val matrix: Matrix,
     val bots: MutableMap<Int, Bot>,
-    private val volatile: Matrix = Matrix.zerosLike(matrix),
+//    private val volatile: Matrix = Matrix.zerosLike(matrix),
     harmonics: Harmonics = Harmonics.Low,
     energy: Long = 0,
     private var expectedBotActionsThisStep: Int = bots.count()
@@ -26,7 +25,6 @@ class State(
     fun split() = State(
         matrix.copy(coordinates = matrix.coordinates.clone()),
         bots.mapValues { it.value.copy() } as MutableMap<Int, Bot>,
-        volatile.copy(coordinates = volatile.coordinates.clone()),
         harmonics,
         energy,
         expectedBotActionsThisStep)
@@ -34,7 +32,6 @@ class State(
     fun shallowSplit() = State(
         matrix,
         bots.mapValues { it.value.copy() } as MutableMap<Int, Bot>,
-        volatile,
         harmonics,
         energy,
         expectedBotActionsThisStep)
@@ -57,31 +54,31 @@ class State(
 
         bots.remove(id)
         botCommands[id] = Halt
-        volatile[bot.pos] = true
+//        volatile[bot.pos] = true
     }
 
     fun wait(id: Int) {
         val bot = checkNotNull(bots[id])
         botCommands[id] = Wait
-        volatile[bot.pos] = true
+//        volatile[bot.pos] = true
     }
 
     fun flip(id: Int) {
         val bot = checkNotNull(bots[id])
         harmonics = harmonics.flip()
         botCommands[id] = Flip
-        volatile[bot.pos] = true
+//        volatile[bot.pos] = true
     }
 
     fun sMove(id: Int, delta: DeltaCoord) {
-        check(delta.isLongLinear) { "not long-linear: $delta" }
+        require(delta.isLongLinear) { "not long-linear: $delta" }
         val bot = checkNotNull(bots[id])
         val oldPos = bot.pos
         val newPos = oldPos + delta
-        check(newPos.isInBounds(matrix.R)) { "out of bounds: $newPos R = ${matrix.R}" }
 
-        volatile[oldPos, newPos] = true
-        check(matrix.isVoidRegion(oldPos, newPos))
+//        volatile[oldPos, newPos] = true
+        assert(matrix.isVoidRegion(oldPos, newPos))
+        assert(newPos.isInBounds(matrix.R)) { "out of bounds: $newPos R = ${matrix.R}" }
 
         bot.pos = newPos
         energy += 2 * delta.mlen
@@ -89,19 +86,19 @@ class State(
     }
 
     fun lMove(id: Int, delta0: DeltaCoord, delta1: DeltaCoord) {
-        check(delta0.isShortLinear)
-        check(delta1.isShortLinear)
+        require(delta0.isShortLinear)
+        require(delta1.isShortLinear)
         val bot = checkNotNull(bots[id])
         val oldPos = bot.pos
         val midPos = oldPos + delta0
         val newPos = midPos + delta1
-        check(midPos.isInBounds(matrix.R)) { "out of bounds: $midPos R = ${matrix.R}" }
-        check(newPos.isInBounds(matrix.R)) { "out of bounds: $newPos R = ${matrix.R}" }
+        assert(midPos.isInBounds(matrix.R)) { "out of bounds: $midPos R = ${matrix.R}" }
+        assert(newPos.isInBounds(matrix.R)) { "out of bounds: $newPos R = ${matrix.R}" }
 
-        check(matrix.isVoidRegion(oldPos, midPos))
-        check(matrix.isVoidRegion(midPos, newPos))
-        volatile[oldPos, midPos] = true
-        volatile[midPos, newPos] = true
+        assert(matrix.isVoidRegion(oldPos, midPos))
+        assert(matrix.isVoidRegion(midPos, newPos))
+//        volatile[oldPos, midPos] = true
+//        volatile[midPos, newPos] = true
 
         bot.pos = newPos
         energy += 2 * (delta0.mlen + 2 + delta1.mlen)
@@ -109,10 +106,10 @@ class State(
     }
 
     fun fill(id: Int, delta: DeltaCoord) {
-        check(delta.isNear)
+        require(delta.isNear)
         val bot = checkNotNull(bots[id])
         val fillPos = bot.pos + delta
-        check(fillPos.isInBounds(matrix.R))
+        assert(fillPos.isInBounds(matrix.R))
 
         if (matrix[fillPos]) {
             energy += 6
@@ -121,8 +118,8 @@ class State(
             energy += 12
         }
         botCommands[id] = Fill(delta)
-        volatile[bot.pos] = true
-        volatile[fillPos] = true
+//        volatile[bot.pos] = true
+//        volatile[fillPos] = true
     }
 
     fun fission(id: Int, delta: DeltaCoord, m: Int) {
@@ -144,8 +141,8 @@ class State(
 
         energy += 24
         botCommands[id] = Fission(delta, m)
-        volatile[bot.pos] = true
-        volatile[newBotPos] = true
+//        volatile[bot.pos] = true
+//        volatile[newBotPos] = true
     }
 
     fun fusion(pId: Int, sId: Int) {
@@ -159,26 +156,29 @@ class State(
         energy -= 24
         botCommands[pId] = FusionP(sBot.pos - pBot.pos)
         botCommands[sId] = FusionS(pBot.pos - sBot.pos)
-        volatile[sBot.pos] = true
-        volatile[pBot.pos] = true
+//        volatile[sBot.pos] = true
+//        volatile[pBot.pos] = true
     }
 
     fun step() {
         check(botCommands.count() == expectedBotActionsThisStep)
 
-        volatile.clear()
+//        volatile.clear()
 
         val volume = matrix.R * matrix.R * matrix.R
         energy += (if (harmonics == Harmonics.High) 30 else 3) * volume
         energy += 20 * expectedBotActionsThisStep
 
         expectedBotActionsThisStep = bots.count()
-        val commands = botCommands.toSortedMap()
-        botCommands.clear()
 
-        for (listener in traceListeners) {
-            listener.onStep(commands)
+        if (traceListeners.isNotEmpty()) {
+            val commands = botCommands.toSortedMap()
+            for (listener in traceListeners) {
+                listener.onStep(commands)
+            }
         }
+
+        botCommands.clear()
     }
 
     override fun equals(other: Any?): Boolean {
