@@ -7,6 +7,7 @@ import java.io.File
 import java.math.RoundingMode
 import java.nio.ByteBuffer
 import java.util.*
+import kotlin.coroutines.experimental.buildSequence
 import kotlin.math.abs
 import kotlin.math.max
 
@@ -46,7 +47,9 @@ data class Coord(val x: Int, val y: Int, val z: Int) : Comparable<Coord> {
 }
 
 data class DeltaCoord(val dx: Int, val dy: Int, val dz: Int) : Comparable<DeltaCoord> {
-    operator fun unaryMinus(): DeltaCoord = DeltaCoord(-dx, -dy, -dz)
+    operator fun unaryMinus() = DeltaCoord(-dx, -dy, -dz)
+
+    operator fun times(s: Int) = DeltaCoord(dx * s, dy * s, dz * s)
 
     val mlen: Int get() = abs(dx) + abs(dy) + abs(dz)
     val clen: Int get() = max(max(abs(dx), abs(dy)), abs(dz))
@@ -69,6 +72,46 @@ data class DeltaCoord(val dx: Int, val dy: Int, val dz: Int) : Comparable<DeltaC
 }
 
 data class Matrix(val R: Int, val coordinates: ByteArray) {
+    /** All coords reachable from a given one via SMove. */
+    fun sNeighborhood(coord: Coord): Sequence<Pair<SMove, Coord>> = buildSequence {
+        for (delta in DXDYDZ_LLD) {
+            val n = coord + delta
+            if (n.isInBounds(R) && isVoidRegion(coord, n)) {
+                yield(SMove(delta) to n)
+            }
+        }
+    }
+
+    /** All coords reachable from a given one via LMove. */
+    fun lNeighborhood(coord: Coord): Sequence<Pair<LMove, Coord>> = buildSequence {
+        for (delta1 in DXDYDZ_SLD) {
+            val n1 = coord + delta1
+            if (n1.isInBounds(R) && isVoidRegion(coord, n1)) {
+                for (delta2 in DXDYDZ_SLD) {
+                    val n2 = coord + delta2
+                    if (n2.isInBounds(R) && isVoidRegion(n1, n2)) {
+                        yield(LMove(delta1, delta2) to n2)
+                    }
+                }
+            }
+        }
+    }
+
+    /** Returns true if the [from, to] region contains no Full coords. */
+    fun isVoidRegion(from: Coord, to: Coord): Boolean {
+        for (x in from.x..to.x) {
+            for (y in from.y..to.y) {
+                for (z in from.z..to.z) {
+                    if (this[x, y, z]) {
+                        return false
+                    }
+                }
+            }
+        }
+
+        return true
+    }
+
     inline fun forEach(
         from: Coord = Coord(0, 0, 0),
         to: Coord = Coord(R - 1, R - 1, R - 1),
@@ -167,6 +210,21 @@ data class Matrix(val R: Int, val coordinates: ByteArray) {
             DeltaCoord(0, 0, -1),
             DeltaCoord(0, -1, 0),
             DeltaCoord(-1, 0, 0))
+
+        val DXDYDZ_SLD: Array<DeltaCoord> = DXDYDZ_MLEN1.asSequence()
+            .flatMap { delta -> buildSequence { for (s in 1..5) yield(delta * s) } }
+            .toList()
+            .toTypedArray()
+
+        val DXDYDZ_LLD: Array<DeltaCoord> = DXDYDZ_MLEN1.asSequence()
+            .flatMap { delta -> buildSequence { for (s in 1..15) yield(delta * s) } }
+            .toList()
+            .toTypedArray()
+
+        init {
+            check(DXDYDZ_SLD.size == 30)
+            check(DXDYDZ_LLD.size == 90)
+        }
 
         fun zerosLike(other: Matrix): Matrix {
             return other.copy(coordinates = ByteArray(other.coordinates.size))

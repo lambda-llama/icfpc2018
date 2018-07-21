@@ -63,7 +63,7 @@ class State(
         val newPos = oldPos + delta
         check(newPos.isInBounds(matrix.R))
 
-        matrix.forEach(oldPos, newPos) { x, y, z -> check(!matrix[x, y, z]) }
+        assert(matrix.isVoidRegion(oldPos, newPos))
 
         bot.pos = newPos
         energy += 2 * delta.mlen
@@ -81,8 +81,8 @@ class State(
         check(midPos.isInBounds(matrix.R))
         check(newPos.isInBounds(matrix.R))
 
-        matrix.forEach(oldPos, midPos) { x, y, z -> check(!matrix[x, y, z]) }
-        matrix.forEach(midPos, newPos) { x, y, z -> check(!matrix[x, y, z]) }
+        assert(matrix.isVoidRegion(oldPos, midPos))
+        assert(matrix.isVoidRegion(midPos, newPos))
 
         bot.pos = newPos
         energy += 2 * (delta0.mlen + 2 + delta1.mlen)
