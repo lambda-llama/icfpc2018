@@ -76,7 +76,7 @@ fun multiSLMove(initial: State, id: Int, target: Coord): Sequence<State> {
             }
         }
 
-        for ((gtd, n) in state.matrix.void2SNeighborhood(b.pos)) {
+        for ((gtd, n) in state.matrix.voidS2FillNeighborhood(b.pos)) {
             if (!next[b.pos]) {
                 val split = state.shallowSplit()
                 for (command in gtd) {

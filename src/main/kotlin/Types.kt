@@ -6,7 +6,6 @@ import java.io.File
 import java.math.RoundingMode
 import java.nio.ByteBuffer
 import java.util.*
-import kotlin.collections.ArrayList
 import kotlin.coroutines.experimental.buildSequence
 import kotlin.math.abs
 import kotlin.math.max
@@ -72,14 +71,22 @@ data class Delta(val dx: Int, val dy: Int, val dz: Int) : Comparable<Delta> {
 
 data class Matrix(val R: Int, val coordinates: ByteArray) {
     /** All coords reachable from a given one via Void and 2-step SMove. */
-    fun void2SNeighborhood(coord: Coord): Sequence<Pair<Array<Command>, Coord>> {
-        return DXDYDZ_MLEN1.asSequence().mapNotNull { delta ->
-            val n1 = coord + delta
-            val n2 = n1 + delta
-            if (n2.isInBounds(R) && this[n1]) {
-                arrayOf(Void(delta), SMove(delta * 2), Fill(-delta)) to n2
-            } else {
-                null
+    fun voidS2FillNeighborhood(coord: Coord): Sequence<Pair<Array<Command>, Coord>> = buildSequence {
+        for (dir in DXDYDZ_MLEN1) {
+            for (s in 2..5) {
+                val n1: Coord = coord + dir
+                val delta = dir * (s - 1)
+                val n2 = n1 + delta
+                if (n1.isInBounds(R) && n2.isInBounds(R)
+                    && this@Matrix[n1]
+                    && isVoidRegion(n1, n2)
+                ) {
+                    val gtd = arrayOf(Void(dir), SMove(dir * 2), Fill(-dir)) +
+                        if (s > 2) arrayOf(SMove(dir * (s - 2))) else emptyArray()
+                    yield(gtd to n2)
+                } else {
+                    break  // No point in proceeding along this direction.
+                }
             }
         }
     }
