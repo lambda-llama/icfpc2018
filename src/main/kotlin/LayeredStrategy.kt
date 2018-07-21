@@ -121,11 +121,7 @@ class LayeredStrategy(val model: Model) : Strategy {
                         .firstOrNull() ?: break
                 filled = true
                 layer.remove(toFill)
-                for (step in goto(bot, fillFrom)) {
-                    move(bot, step)
-                    state.step()
-                    yield(state)
-                }
+                yieldAll(multiSLMove(state, bot.id, fillFrom))
                 state.fill(bot.id, toFill - bot.pos)
                 state.step()
                 yield(state)
@@ -144,11 +140,7 @@ class LayeredStrategy(val model: Model) : Strategy {
 
         check(state.matrix == model.matrix)
 
-        for (step in goto(bot, Coord.ZERO)) {
-            move(bot, step)
-            state.step()
-            yield(state)
-        }
+        yieldAll(multiSLMove(state, bot.id, Coord.ZERO))
         state.halt(bot.id)
         state.step()
         yield(state)

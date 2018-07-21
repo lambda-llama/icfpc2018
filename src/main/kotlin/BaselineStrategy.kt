@@ -28,14 +28,17 @@ sealed class LList<T> {
     abstract fun reversed(): LList<T>
 }
 
-fun multiSMove(initial: State, id: Int, target: Coord): Sequence<State> {
+/**
+ * Moves the bot with ID `id` to `target` using minimal energy.
+ *
+ * Both S- and L-moves are used.
+ */
+fun multiSLMove(initial: State, id: Int, target: Coord): Sequence<State> {
     require(target.isInBounds(initial.matrix.R))
 
     val seen = HashSet<Coord>()
     val next = HashSet<Coord>()
-    val q = PriorityQueue<Pair<State, LList<Command>>>(compareBy {
-        it.first.energy + (it.first[id]!!.pos - target).mlen
-    })
+    val q = PriorityQueue<Pair<State, LList<Command>>>(compareBy { it.first.energy })
     q.add(initial.shallowSplit() to LList.Nil())
     var found: LList<Command>? = null
     while (q.isNotEmpty()) {
@@ -60,7 +63,7 @@ fun multiSMove(initial: State, id: Int, target: Coord): Sequence<State> {
     }
 
     if (found == null) {
-        error("failed to multiSMove: ${initial[id]!!.pos} -> $target")
+        error("failed to multiSLMove: ${initial[id]!!.pos} -> $target")
     }
 
     // Mutate initial in-place!
@@ -95,7 +98,7 @@ class Baseline(private val model: Model) : Strategy {
         state.flip(id)
         state.step()
         yield(state)
-        yieldAll(multiSMove(state, id, minCoord + initialDelta))
+        yieldAll(multiSLMove(state, id, minCoord + initialDelta))
 
         val b = state[id]!!
         var x = minCoord.x
@@ -134,7 +137,7 @@ class Baseline(private val model: Model) : Strategy {
         state.flip(id)
         state.step()
         yield(state)
-        yieldAll(multiSMove(state, id, Coord.ZERO))
+        yieldAll(multiSLMove(state, id, Coord.ZERO))
         state.halt(id)
         state.step()
         yield(state)
