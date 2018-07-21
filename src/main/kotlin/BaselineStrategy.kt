@@ -42,24 +42,33 @@ fun multiSLMove(initial: State, id: Int, target: Coord): Sequence<State> {
         Constants.DEFAULT_CAPACITY,
         Constants.DEFAULT_LOAD_FACTOR,
         Long.MAX_VALUE)
-    val q = PriorityQueue<Pair<State, LList<Command>>>(compareBy { it.first.energy })
-    q.add(initial.shallowSplit() to LList.Nil())
+    val next = HashSet<Coord>()
+    val meta = HashMap<Coord, Pair<State, LList<Command>>>()
+    val q = PriorityQueue<Coord>(compareBy { meta[it]!!.first.energy })
+    meta[initial[id]!!.pos] = initial to LList.Nil()
+    q.add(initial[id]!!.pos)
     var found: LList<Command>? = null
     while (q.isNotEmpty()) {
-        val (state, commands) = q.poll()
-        val b = state[id]!!
-        if (b.pos == target) {
+        val pos = q.poll()
+        next.remove(pos)
+        val (state, commands) = meta[pos]!!
+        check(state[id]!!.pos == pos)
+        if (pos == target) {
             found = commands
             break
         }
 
-        for ((command, n) in state.matrix.sNeighborhood(b.pos) + state.matrix.lNeighborhood(b.pos)) {
-            val split = state.shallowSplit()
-            command(split, b.id)
-            split.step()
-            if (split.energy < seen[n]) {
-                seen.put(n, split.energy)
-                q.add(split to LList.Cons(command, commands))
+        for ((command, n) in state.matrix.sNeighborhood(pos) + state.matrix.lNeighborhood(pos)) {
+            if (n !in next) {
+                val split = state.shallowSplit()
+                command(split, id)
+                split.step()
+                if (split.energy + (n - target).mlen < seen[n]) {
+                    meta[n] = split to LList.Cons(command, commands)
+                    seen.put(n, split.energy)
+                    q.add(n)
+                    next.add(n)
+                }
             }
         }
     }

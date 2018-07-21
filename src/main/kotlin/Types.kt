@@ -214,11 +214,13 @@ data class Matrix(val R: Int, val coordinates: ByteArray) {
         val DXDYDZ_SLD: Array<DeltaCoord> = DXDYDZ_MLEN1.asSequence()
             .flatMap { delta -> buildSequence { for (s in 1..5) yield(delta * s) } }
             .toList()
+            .asReversed()
             .toTypedArray()
 
         val DXDYDZ_LLD: Array<DeltaCoord> = DXDYDZ_MLEN1.asSequence()
             .flatMap { delta -> buildSequence { for (s in 1..15) yield(delta * s) } }
             .toList()
+            .asReversed()
             .toTypedArray()
 
         init {
