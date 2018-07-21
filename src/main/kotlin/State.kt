@@ -125,6 +125,21 @@ class State(
 //        volatile[fillPos] = true
     }
 
+    fun void(id: Int, delta: Delta) {
+        check(delta.isNear)
+        val bot = checkNotNull(bots[id])
+        val voidPos = bot.pos + delta
+        assert(voidPos.isInBounds(matrix.R))
+
+        if (matrix[voidPos]) {
+            matrix[voidPos] = false
+            energy -= 12
+        } else {
+            energy += 3
+        }
+        botCommands[id] = Void(delta)
+    }
+
     fun fission(id: Int, delta: Delta, m: Int) {
         check(delta.isNear)
         val bot = checkNotNull(bots[id])
@@ -161,6 +176,34 @@ class State(
         botCommands[sId] = FusionS(pBot.pos - sBot.pos)
 //        volatile[sBot.pos] = true
 //        volatile[pBot.pos] = true
+    }
+
+    fun gFillLine(id0: Int, i1: Int, d0: Delta, d1: Delta) {
+        TODO()
+    }
+
+    fun gFillPlane(id0: Int, i1: Int, i2: Int, i3: Int,
+                   d0: Delta, d1: Delta, d2: Delta, d3: Delta) {
+        TODO()
+    }
+
+    fun gFillBox(id0: Int, i1: Int, i2: Int, i3: Int, i4: Int, i5: Int, i6: Int, i7: Int,
+                 d0: Delta, d1: Delta, d2: Delta, d3: Delta, d4: Delta, d5: Delta, d6: Delta, d7: Delta) {
+        TODO()
+    }
+
+    fun gVoidLine(id0: Int, i1: Int, d0: Delta, d1: Delta) {
+        TODO()
+    }
+
+    fun gVoidPlane(id0: Int, i1: Int, i2: Int, i3: Int,
+                   d0: Delta, d1: Delta, d2: Delta, d3: Delta) {
+        TODO()
+    }
+
+    fun gVoidBox(id0: Int, i1: Int, i2: Int, i3: Int, i4: Int, i5: Int, i6: Int, i7: Int,
+                 d0: Delta, d1: Delta, d2: Delta, d3: Delta, d4: Delta, d5: Delta, d6: Delta, d7: Delta) {
+        TODO()
     }
 
     fun step() {

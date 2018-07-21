@@ -57,6 +57,7 @@ data class Delta(val dx: Int, val dy: Int, val dz: Int) : Comparable<Delta> {
     val isShortLinear: Boolean get() = isLinear && mlen <= 5
     val isLongLinear: Boolean get() = isLinear && mlen <= 15
     val isNear: Boolean get() = mlen in 1..2 && clen == 1
+    val isFar: Boolean get() = clen in 1..30
 
     override fun compareTo(other: Delta): Int = ComparisonChain.start()
         .compare(dx, other.dx)

@@ -11,9 +11,12 @@ class TraceWriter(val stream: DataOutputStream) : TraceListener {
         const val SMOVE: Int = 0b0000_0100
         const val LMOVE: Int = 0b0000_1100
         const val FILL: Int = 0b0000_0011
+        const val VOID: Int = 0b0000_0010
         const val FISSION: Int = 0b0000_0101
         const val FUSION_P: Int = 0b0000_0111
         const val FUSION_S: Int = 0b0000_0110
+        const val GFILL: Int = 0b0000_0001
+        const val GVOID: Int = 0b0000_0000
 
         fun linearAxis(coord: Delta): Int {
             assert(coord.isLinear)
@@ -36,9 +39,14 @@ class TraceWriter(val stream: DataOutputStream) : TraceListener {
             return coord.dz + 15
         }
 
-        fun near(coord:Delta): Int {
+        fun near(coord: Delta): Int {
             assert(coord.isNear)
             return (coord.dx + 1) * 9 + (coord.dy + 1) * 3 + (coord.dz + 1)
+        }
+
+        fun far(coord: Delta): Triple<Int, Int, Int> {
+            assert(coord.isFar)
+            return Triple(coord.dx + 30, coord.dy + 30, coord.dz + 30)
         }
     }
 
@@ -67,6 +75,8 @@ class TraceWriter(val stream: DataOutputStream) : TraceListener {
                 }
                 is Fill -> stream.writeByte(FILL
                         or (near(command.delta) shl 3))
+                is Void -> stream.writeByte(VOID
+                        or (near(command.delta) shl 3))
                 is Fission -> {
                     stream.writeByte(FISSION
                             or (near(command.delta) shl 3))
@@ -76,6 +86,22 @@ class TraceWriter(val stream: DataOutputStream) : TraceListener {
                         or (near(command.delta) shl 3))
                 is FusionS -> stream.writeByte(FUSION_S
                         or (near(command.delta) shl 3))
+                is GFill -> {
+                    stream.writeByte(GFILL
+                            or (near(command.dNear) shl 3))
+                    val far = far(command.dFar)
+                    stream.writeByte(far.first)
+                    stream.writeByte(far.second)
+                    stream.writeByte(far.third)
+                }
+                is GVoid -> {
+                    stream.writeByte(GVOID
+                            or (near(command.dNear) shl 3))
+                    val far = far(command.dFar)
+                    stream.writeByte(far.first)
+                    stream.writeByte(far.second)
+                    stream.writeByte(far.third)
+                }
             }
         }
     }

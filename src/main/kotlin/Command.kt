@@ -40,6 +40,12 @@ data class Fill(val delta: Delta): Command() {
     override fun toString() = "Fill($delta)"
 }
 
+data class Void(val delta: Delta): Command() {
+    override fun invoke(state: State, id: Int) = state.void(id, delta)
+
+    override fun toString() = "Void($delta)"
+}
+
 data class Fission(val delta: Delta, val m: Int): Command() {
     override fun invoke(state: State, id: Int) = state.fission(id, delta, m)
 
@@ -56,4 +62,16 @@ data class FusionS(val delta: Delta): Command() {
     override fun invoke(state: State, id: Int) = TODO()
 
     override fun toString() = "FusionS($delta)"
+}
+
+data class GFill(val dNear: Delta, val dFar: Delta): Command() {
+    override fun invoke(state: State, id: Int) = TODO()
+
+    override fun toString() = "GFill($dNear, $dFar)"
+}
+
+data class GVoid(val dNear: Delta, val dFar: Delta): Command() {
+    override fun invoke(state: State, id: Int) = TODO()
+
+    override fun toString() = "GVoid($dNear, $dFar)"
 }
