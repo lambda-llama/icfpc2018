@@ -31,8 +31,13 @@ fun main(args: Array<String>) {
             val traceFilePath = parts[1]
             runNonInteractive(modelFilePath, traceFilePath, args)
         }
+    } else if (args[0] == "console" ) {
+        val modelFilePath = args[1]
+        val traceFilePath = "out.nbt"
+        args = args.drop(2)
+        runNonInteractive(modelFilePath, traceFilePath, args)
     } else {
-        runInteractive("problemsL/LA045_tgt.mdl", "out.nbt", listOf("layered"))
+        runInteractive("problemsL/LA065_tgt.mdl", "out.nbt", listOf("layered"))
     }
 }
 
