@@ -71,7 +71,7 @@ class LayeredStrategy(val model: Model) : Strategy {
         throw Exception("Failed to find a path")
     }
 
-    private fun fillableFrom(coord: Coord): Coord {
+    private fun fillableFrom(coord: Coord): Coord? {
         val r = state.matrix.R - 1
         val arr = arrayOf(0, -1, 1)
         for (y in 1 downTo -1) {
@@ -91,7 +91,7 @@ class LayeredStrategy(val model: Model) : Strategy {
                 }
             }
         }
-        throw Exception("Failed to find a coord to fill the target from")
+        return null
     }
 
     override fun run(): Sequence<State> = buildSequence {
@@ -111,18 +111,26 @@ class LayeredStrategy(val model: Model) : Strategy {
 
         do {
             val prevLayer = layer.toSet()
+            var filled = false
             while (layer.any()) {
-                val next = layer.minBy { c -> (c - bot.pos).mlen }!!
-                layer.remove(next)
-                for (step in goto(bot, fillableFrom(next))) {
+
+                val (toFill, fillFrom) = layer
+                        .asSequence()
+                        .sortedBy { (it - bot.pos).mlen }
+                        .mapNotNull { next -> fillableFrom(next)?.let { next to it } }
+                        .firstOrNull() ?: break
+                filled = true
+                layer.remove(toFill)
+                for (step in goto(bot, fillFrom)) {
                     move(bot, step)
                     state.step()
                     yield(state)
                 }
-                state.fill(bot.id, next - bot.pos)
+                state.fill(bot.id, toFill - bot.pos)
                 state.step()
                 yield(state)
             }
+            if (!filled) { error("Failed to fill anything") }
 
             for (coord in prevLayer) {
                 for (dxdydz in Matrix.DXDYDZ_MLEN1) {
