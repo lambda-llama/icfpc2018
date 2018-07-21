@@ -16,6 +16,7 @@ fun getStrategy(args: List<String>, model: Model): Strategy {
         "replay" -> ReplayStrategy(model, File(args[1]))
         "layered" -> LayeredStrategy(model)
         "grounded" -> GroundedStrategy(model)
+        "sculptor" -> SculptorStrategy(model)
         else -> throw Exception("Invalid strategy name `${args[0]}`")
     }
 }
@@ -103,7 +104,7 @@ data class Snapshot(
 data class CurrentState(
         @Volatile var snapshot: Snapshot,
         @Volatile var delayMs: Double = 250.0,
-        @Volatile var paused: Boolean = false,
+        @Volatile var paused: Boolean = true,
         @Volatile var step: Boolean = false
 ) : TraceListener {
     constructor(state: State) : this(Snapshot(state))

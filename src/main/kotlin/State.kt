@@ -141,7 +141,7 @@ class State(
         botCommands[id] = Void(delta)
     }
 
-    fun fission(id: Int, delta: Delta, m: Int) {
+    fun fission(id: Int, delta: Delta, m: Int): Int {
         check(delta.isNear)
         val bot = checkNotNull(bots[id])
         check(bot.seeds.any())
@@ -150,9 +150,9 @@ class State(
         check(!matrix[newBotPos])
         check(m < bot.seeds.count())
 
-        val split = bot.seeds.elementAt(m) + 1
-        val newBotSeeds = bot.seeds.headSet(split)
-        bot.seeds = bot.seeds.tailSet(split)
+        val split = bot.seeds.elementAt(m)
+        val newBotSeeds = bot.seeds.filter { i -> i <= split }.toSortedSet()
+        bot.seeds = bot.seeds.filter { i -> i > split }.toSortedSet()
         val newBotId = newBotSeeds.first()
         newBotSeeds.remove(newBotId)
         val newBot = Bot(newBotId, newBotPos, newBotSeeds)
@@ -162,6 +162,8 @@ class State(
         botCommands[id] = Fission(delta, m)
 //        volatile[bot.pos] = true
 //        volatile[newBotPos] = true
+
+        return newBotId
     }
 
     fun fusion(pId: Int, sId: Int) {

@@ -47,7 +47,7 @@ data class Void(val delta: Delta): Command() {
 }
 
 data class Fission(val delta: Delta, val m: Int): Command() {
-    override fun invoke(state: State, id: Int) = state.fission(id, delta, m)
+    override fun invoke(state: State, id: Int) { state.fission(id, delta, m) }
 
     override fun toString() = "Fission($delta, $m)"
 }
