@@ -116,8 +116,8 @@ class LayeredStrategy(val model: Model) : Strategy {
 
                 val (toFill, fillFrom) = layer
                         .asSequence()
-                        .sortedBy { (it - bot.pos).mlen }
-                        .mapNotNull { next -> fillableFrom(next)?.let { next to it } }
+                        .sortedWith(compareBy({ it.y }, { (it - bot.pos).mlen }))
+                        .mapNotNull { toFill -> fillableFrom(toFill)?.let { toFill to it } }
                         .firstOrNull() ?: break
                 filled = true
                 layer.remove(toFill)
@@ -126,7 +126,9 @@ class LayeredStrategy(val model: Model) : Strategy {
                 state.step()
                 yield(state)
             }
-            if (!filled) { error("Failed to fill anything") }
+            if (!filled) {
+                error("Failed to fill anything")
+            }
 
             for (coord in prevLayer) {
                 for (dxdydz in Matrix.DXDYDZ_MLEN1) {
