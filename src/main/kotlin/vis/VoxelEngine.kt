@@ -8,6 +8,7 @@ import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator
 import com.badlogic.gdx.graphics.g3d.*
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
 import com.badlogic.gdx.graphics.g3d.environment.DirectionalLight
+import com.badlogic.gdx.math.Matrix4
 import com.badlogic.gdx.scenes.scene2d.Stage
 import com.badlogic.gdx.scenes.scene2d.ui.Label
 import com.badlogic.gdx.utils.Align
@@ -24,9 +25,7 @@ class VoxelEngine(private val strategyName: String, private var state: State)
     : ApplicationAdapter(), TraceListener {
     lateinit var camera: PerspectiveCamera
     private var chunkModel: Model? = null
-    private var instance: ModelInstance? = null
     lateinit var floorModel: Model
-    lateinit var floorInstance: ModelInstance
     lateinit var modelBatch: ModelBatch
     lateinit var environment: Environment
     private var sleepTimeMs: Long = 250
@@ -36,6 +35,8 @@ class VoxelEngine(private val strategyName: String, private var state: State)
     private var info: Label? = null
     private var lastCommands: SortedMap<Int, Command> = TreeMap()
     private var totalSteps: Int = 0
+
+    private var transform = Matrix4().idt()
 
     override fun create() {
         modelBatch = ModelBatch()
@@ -54,10 +55,7 @@ class VoxelEngine(private val strategyName: String, private var state: State)
         environment.add(DirectionalLight().set(0.8f, 0.8f, 0.8f, -1f, -0.8f, -0.2f))
 
         chunkModel = state.toVisModel()
-        instance = ModelInstance(chunkModel)
-
         floorModel = state.floorModel()
-        floorInstance = ModelInstance(floorModel)
 
         val generator = FreeTypeFontGenerator(Gdx.files.internal("fonts/ubuntu.ttf"))
         val param = FreeTypeFontGenerator.FreeTypeFontParameter()
@@ -123,7 +121,6 @@ class VoxelEngine(private val strategyName: String, private var state: State)
     override fun render() {
         chunkModel?.dispose()
         chunkModel = state.toVisModel()
-        instance = ModelInstance(chunkModel)
 
         Gdx.gl.glViewport(0, 0, Gdx.graphics.width, Gdx.graphics.height)
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT or GL20.GL_DEPTH_BUFFER_BIT)
@@ -131,8 +128,8 @@ class VoxelEngine(private val strategyName: String, private var state: State)
         keyboardControls()
 
         modelBatch.begin(camera)
-        instance?.let { modelBatch.render(it, environment) }
-        modelBatch.render(floorInstance, environment)
+        modelBatch.render(ModelInstance(chunkModel, transform), environment)
+        modelBatch.render(ModelInstance(floorModel, transform), environment)
         modelBatch.end()
 
         synchronized(this) {
@@ -142,56 +139,47 @@ class VoxelEngine(private val strategyName: String, private var state: State)
 
     private fun keyboardControls() {
         val speed = 2f
-        val instance = instance
-        if (instance != null) {
-            if (Gdx.input.isKeyPressed(Input.Keys.Z)) {
-                sleepTimeMs -= 10
-                sleepTimeMs = Math.max(sleepTimeMs, 10)
-            }
-            if (Gdx.input.isKeyPressed(Input.Keys.X)) {
-                sleepTimeMs += 10
-                sleepTimeMs = Math.min(sleepTimeMs, 500)
-            }
-            if (Gdx.input.isKeyJustPressed(Input.Keys.C)) {
-                paused = !paused
-                updateInfo()
-            }
-            if (Gdx.input.isKeyJustPressed(Input.Keys.SPACE)) {
-                step = true
-            }
+        if (Gdx.input.isKeyPressed(Input.Keys.Z)) {
+            sleepTimeMs -= 10
+            sleepTimeMs = Math.max(sleepTimeMs, 10)
+        }
+        if (Gdx.input.isKeyPressed(Input.Keys.X)) {
+            sleepTimeMs += 10
+            sleepTimeMs = Math.min(sleepTimeMs, 500)
+        }
+        if (Gdx.input.isKeyJustPressed(Input.Keys.C)) {
+            paused = !paused
+            updateInfo()
+        }
+        if (Gdx.input.isKeyJustPressed(Input.Keys.SPACE)) {
+            step = true
+        }
 
-            if (Gdx.input.isKeyPressed(Input.Keys.EQUALS)
-                    || Gdx.input.isKeyPressed(Input.Keys.E)) {
-                instance.transform.scale(1.1f, 1.1f, 1.1f)
-                floorInstance.transform.scale(1.1f, 1.1f, 1.1f)
-            }
+        if (Gdx.input.isKeyPressed(Input.Keys.EQUALS)
+                || Gdx.input.isKeyPressed(Input.Keys.E)) {
+            transform.scale(1.1f, 1.1f, 1.1f)
+        }
 
-            if (Gdx.input.isKeyPressed(Input.Keys.MINUS)
-                    || Gdx.input.isKeyPressed(Input.Keys.Q)) {
-                instance.transform.scale(0.9f, 0.9f, 0.9f)
-                floorInstance.transform.scale(0.9f, 0.9f, 0.9f)
-            }
+        if (Gdx.input.isKeyPressed(Input.Keys.MINUS)
+                || Gdx.input.isKeyPressed(Input.Keys.Q)) {
+            transform.scale(0.9f, 0.9f, 0.9f)
+        }
 
-            if (Gdx.input.isKeyPressed(Input.Keys.RIGHT)
-                    || Gdx.input.isKeyPressed(Input.Keys.D)) {
-                instance.transform.rotate(0f, 1f, 0f, speed)
-                floorInstance.transform.rotate(0f, 1f, 0f, speed)
-            }
-            if (Gdx.input.isKeyPressed(Input.Keys.LEFT)
-                    || Gdx.input.isKeyPressed(Input.Keys.A)) {
-                instance.transform.rotate(0f, 1f, 0f, -speed)
-                floorInstance.transform.rotate(0f, 1f, 0f, -speed)
-            }
-            if (Gdx.input.isKeyPressed(Input.Keys.UP)
-                    || Gdx.input.isKeyPressed(Input.Keys.W)) {
-                instance.transform.rotate(1f, 0f, 0f, speed)
-                floorInstance.transform.rotate(1f, 0f, 0f, speed)
-            }
-            if (Gdx.input.isKeyPressed(Input.Keys.DOWN)
-                    || Gdx.input.isKeyPressed(Input.Keys.S)) {
-                instance.transform.rotate(1f, 1f, 0f, -speed)
-                floorInstance.transform.rotate(1f, 1f, 0f, -speed)
-            }
+        if (Gdx.input.isKeyPressed(Input.Keys.RIGHT)
+                || Gdx.input.isKeyPressed(Input.Keys.D)) {
+            transform.rotate(0f, 1f, 0f, speed)
+        }
+        if (Gdx.input.isKeyPressed(Input.Keys.LEFT)
+                || Gdx.input.isKeyPressed(Input.Keys.A)) {
+            transform.rotate(0f, 1f, 0f, -speed)
+        }
+        if (Gdx.input.isKeyPressed(Input.Keys.UP)
+                || Gdx.input.isKeyPressed(Input.Keys.W)) {
+            transform.rotate(1f, 0f, 0f, speed)
+        }
+        if (Gdx.input.isKeyPressed(Input.Keys.DOWN)
+                || Gdx.input.isKeyPressed(Input.Keys.S)) {
+            transform.rotate(1f, 1f, 0f, -speed)
         }
     }
 
