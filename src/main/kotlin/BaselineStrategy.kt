@@ -2,7 +2,6 @@ package io.github.lambdallama
 
 import gnu.trove.impl.Constants
 import gnu.trove.map.hash.TObjectIntHashMap
-import gnu.trove.map.hash.TObjectLongHashMap
 import java.util.*
 import kotlin.coroutines.experimental.buildSequence
 
@@ -100,9 +99,9 @@ class Baseline(private val model: Model) : Strategy {
         yield(state)
         val (minCoord, maxCoord) = model.bbox
         val initialDelta = arrayOf(
-            DeltaCoord(-1, 0, 0),
-            DeltaCoord(0, -1, 0),
-            DeltaCoord(0, 0, -1)
+            Delta(-1, 0, 0),
+            Delta(0, -1, 0),
+            Delta(0, 0, -1)
         ).first {
             val n = minCoord + it
             n.x >= 0 && n.y >= 0 && n.z >= 0

@@ -16,7 +16,7 @@ class LayeredStrategy(val model: Model) : Strategy {
                     if (x < 0 || y < 0 || z < 0 || x > r || y > r || z > r) {
                         continue
                     }
-                    val delta = DeltaCoord(x, y, z)
+                    val delta = Delta(x, y, z)
                     if (!delta.isNear) {
                         continue
                     }

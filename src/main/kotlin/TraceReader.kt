@@ -3,31 +3,31 @@ package io.github.lambdallama
 import java.io.DataInputStream
 
 class TraceReader(val stream: DataInputStream) {
-    private fun shortLinear(axis: Int, v: Int): DeltaCoord {
+    private fun shortLinear(axis: Int, v: Int): Delta {
         return when (axis) {
-            0b01 -> DeltaCoord(v - 5, 0 ,0)
-            0b10 -> DeltaCoord(0, v - 5, 0)
-            0b11 -> DeltaCoord(0, 0, v - 5)
+            0b01 -> Delta(v - 5, 0 ,0)
+            0b10 -> Delta(0, v - 5, 0)
+            0b11 -> Delta(0, 0, v - 5)
             else -> throw Exception("Invalid input stream")
         }
     }
 
-    private fun longLinear(axis: Int, v: Int): DeltaCoord {
+    private fun longLinear(axis: Int, v: Int): Delta {
         return when (axis) {
-            0b01 -> DeltaCoord(v - 15, 0 ,0)
-            0b10 -> DeltaCoord(0, v - 15, 0)
-            0b11 -> DeltaCoord(0, 0, v - 15)
+            0b01 -> Delta(v - 15, 0 ,0)
+            0b10 -> Delta(0, v - 15, 0)
+            0b11 -> Delta(0, 0, v - 15)
             else -> throw Exception("Invalid input stream")
         }
     }
 
-    private fun near(v: Int): DeltaCoord {
+    private fun near(v: Int): Delta {
         val dz = (v % 3) - 1
         val v0 = v / 3
         val dy = (v0 % 3) - 1
         val v1 = v0 / 3
         val dx = v1 - 1
-        return DeltaCoord(dx, dy, dz)
+        return Delta(dx, dy, dz)
     }
 
     fun readAllCommands(): Sequence<Command> {

@@ -15,28 +15,28 @@ class TraceWriter(val stream: DataOutputStream) : TraceListener {
         const val FUSION_P: Int = 0b0000_0111
         const val FUSION_S: Int = 0b0000_0110
 
-        fun linearAxis(coord: DeltaCoord): Int {
+        fun linearAxis(coord: Delta): Int {
             assert(coord.isLinear)
             if (coord.dx != 0) return 0b01
             if (coord.dy != 0) return 0b10
             return 0b11
         }
 
-        fun shortLinear(coord: DeltaCoord): Int {
+        fun shortLinear(coord: Delta): Int {
             assert(coord.isShortLinear)
             if (coord.dx != 0) return coord.dx + 5
             if (coord.dy != 0) return coord.dy + 5
             return coord.dz + 5
         }
 
-        fun longLinear(coord: DeltaCoord): Int {
+        fun longLinear(coord: Delta): Int {
             assert(coord.isLongLinear)
             if (coord.dx != 0) return coord.dx + 15
             if (coord.dy != 0) return coord.dy + 15
             return coord.dz + 15
         }
 
-        fun near(coord:DeltaCoord): Int {
+        fun near(coord:Delta): Int {
             assert(coord.isNear)
             return (coord.dx + 1) * 9 + (coord.dy + 1) * 3 + (coord.dz + 1)
         }

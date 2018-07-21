@@ -73,7 +73,7 @@ class State(
 //        volatile[bot.pos] = true
     }
 
-    fun sMove(id: Int, delta: DeltaCoord) {
+    fun sMove(id: Int, delta: Delta) {
         require(delta.isLongLinear) { "not long-linear: $delta" }
         val bot = checkNotNull(bots[id])
         val oldPos = bot.pos
@@ -88,7 +88,7 @@ class State(
         botCommands[id] = SMove(delta)
     }
 
-    fun lMove(id: Int, delta0: DeltaCoord, delta1: DeltaCoord) {
+    fun lMove(id: Int, delta0: Delta, delta1: Delta) {
         require(delta0.isShortLinear)
         require(delta1.isShortLinear)
         val bot = checkNotNull(bots[id])
@@ -108,7 +108,7 @@ class State(
         botCommands[id] = LMove(delta0, delta1)
     }
 
-    fun fill(id: Int, delta: DeltaCoord) {
+    fun fill(id: Int, delta: Delta) {
         require(delta.isNear)
         val bot = checkNotNull(bots[id])
         val fillPos = bot.pos + delta
@@ -125,7 +125,7 @@ class State(
 //        volatile[fillPos] = true
     }
 
-    fun fission(id: Int, delta: DeltaCoord, m: Int) {
+    fun fission(id: Int, delta: Delta, m: Int) {
         check(delta.isNear)
         val bot = checkNotNull(bots[id])
         check(bot.seeds.any())

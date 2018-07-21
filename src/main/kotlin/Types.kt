@@ -16,16 +16,16 @@ data class Coord(val x: Int, val y: Int, val z: Int) : Comparable<Coord> {
         return x in 0 until R && y in 0 until R && z in 0 until R
     }
 
-    operator fun plus(delta: DeltaCoord): Coord {
+    operator fun plus(delta: Delta): Coord {
         return Coord(x + delta.dx, y + delta.dy, z + delta.dz)
     }
 
-    operator fun minus(delta: DeltaCoord): Coord {
+    operator fun minus(delta: Delta): Coord {
         return this + (-delta)
     }
 
-    operator fun minus(coord: Coord): DeltaCoord {
-        return DeltaCoord(x - coord.x, y - coord.y, z - coord.z)
+    operator fun minus(coord: Coord): Delta {
+        return Delta(x - coord.x, y - coord.y, z - coord.z)
     }
 
     override fun compareTo(other: Coord): Int = ComparisonChain.start()
@@ -43,10 +43,10 @@ data class Coord(val x: Int, val y: Int, val z: Int) : Comparable<Coord> {
     }
 }
 
-data class DeltaCoord(val dx: Int, val dy: Int, val dz: Int) : Comparable<DeltaCoord> {
-    operator fun unaryMinus() = DeltaCoord(-dx, -dy, -dz)
+data class Delta(val dx: Int, val dy: Int, val dz: Int) : Comparable<Delta> {
+    operator fun unaryMinus() = Delta(-dx, -dy, -dz)
 
-    operator fun times(s: Int) = DeltaCoord(dx * s, dy * s, dz * s)
+    operator fun times(s: Int) = Delta(dx * s, dy * s, dz * s)
 
     val mlen: Int get() = abs(dx) + abs(dy) + abs(dz)
     val clen: Int get() = max(max(abs(dx), abs(dy)), abs(dz))
@@ -57,7 +57,7 @@ data class DeltaCoord(val dx: Int, val dy: Int, val dz: Int) : Comparable<DeltaC
     val isLongLinear: Boolean get() = isLinear && mlen <= 15
     val isNear: Boolean get() = mlen in 1..2 && clen == 1
 
-    override fun compareTo(other: DeltaCoord): Int = ComparisonChain.start()
+    override fun compareTo(other: Delta): Int = ComparisonChain.start()
         .compare(dx, other.dx)
         .compare(dy, other.dy)
         .compare(dz, other.dz)
@@ -226,13 +226,13 @@ data class Matrix(val R: Int, val coordinates: ByteArray) {
     }
 
     companion object {
-        val DXDYDZ_MLEN1: Array<DeltaCoord> = arrayOf(
-            DeltaCoord(0, 0, 1),
-            DeltaCoord(0, 1, 0),
-            DeltaCoord(1, 0, 0),
-            DeltaCoord(0, 0, -1),
-            DeltaCoord(0, -1, 0),
-            DeltaCoord(-1, 0, 0))
+        val DXDYDZ_MLEN1: Array<Delta> = arrayOf(
+            Delta(0, 0, 1),
+            Delta(0, 1, 0),
+            Delta(1, 0, 0),
+            Delta(0, 0, -1),
+            Delta(0, -1, 0),
+            Delta(-1, 0, 0))
 
         fun zerosLike(other: Matrix): Matrix {
             return other.copy(coordinates = ByteArray(other.coordinates.size))
