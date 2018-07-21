@@ -46,7 +46,7 @@ fun multiSLMove(initial: State, id: Int, target: Coord): Sequence<State> {
         Constants.DEFAULT_CAPACITY,
         Constants.DEFAULT_LOAD_FACTOR,
         Long.MAX_VALUE)
-    val next = HashSet<Coord>()
+    val next = Matrix.zerosLike(initial.matrix)
     val meta = HashMap<Coord, Pair<State, LList<Command>>>()
     val q = PriorityQueue<Coord>(compareBy { heuristic[it] })
     meta[initial[id]!!.pos] = initial to LList.Nil()
@@ -54,25 +54,24 @@ fun multiSLMove(initial: State, id: Int, target: Coord): Sequence<State> {
     var found: LList<Command>? = null
     while (q.isNotEmpty()) {
         val pos = q.poll()
-        next.remove(pos)
+        next[pos] = false
         val (state, commands) = meta[pos]!!
-        check(state[id]!!.pos == pos)
         if (pos == target) {
             found = commands
             break
         }
 
         for ((command, n) in state.matrix.sNeighborhood(pos) + state.matrix.lNeighborhood(pos)) {
-            if (n !in next) {
+            if (!next[pos]) {
                 val split = state.shallowSplit()
                 command(split, id)
                 split.step()
                 val h = split.heuristic(id, target)
-                if (n !in meta || h < heuristic[n]) {
+                if (h < heuristic[n]) {
                     meta[n] = split to LList.Cons(command, commands)
                     heuristic.put(n, h)
                     q.add(n)
-                    next.add(n)
+                    next[n] = true
                 }
             }
         }

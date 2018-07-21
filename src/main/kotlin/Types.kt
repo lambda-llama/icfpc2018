@@ -1,7 +1,6 @@
 package io.github.lambdallama
 
 import com.google.common.collect.ComparisonChain
-import com.google.common.collect.Ordering
 import com.google.common.math.IntMath
 import java.io.File
 import java.math.RoundingMode
@@ -72,25 +71,49 @@ data class DeltaCoord(val dx: Int, val dy: Int, val dz: Int) : Comparable<DeltaC
 data class Matrix(val R: Int, val coordinates: ByteArray) {
     /** All coords reachable from a given one via SMove. */
     fun sNeighborhood(coord: Coord): Sequence<Pair<SMove, Coord>> = buildSequence {
-        for (delta in DXDYDZ_LLD) {
-            val n = coord + delta
-            if (n.isInBounds(R) && isVoidRegion(coord, n)) {
-                yield(SMove(delta) to n)
+        for (dir in DXDYDZ_MLEN1) {
+            var prev = coord
+            for (s in 1..15) {
+                val delta = dir * s
+                val n = coord + delta
+                if (n.isInBounds(R) && isVoidRegion(prev, n)) {
+                    yield(SMove(delta) to n)
+                } else {
+                    break  // No point in proceeding along this direction.
+                }
+
+                prev = n
             }
         }
     }
 
     /** All coords reachable from a given one via LMove. */
     fun lNeighborhood(coord: Coord): Sequence<Pair<LMove, Coord>> = buildSequence {
-        for (delta1 in DXDYDZ_SLD) {
-            val n1 = coord + delta1
-            if (n1.isInBounds(R) && isVoidRegion(coord, n1)) {
-                for (delta2 in DXDYDZ_SLD) {
-                    val n2 = n1 + delta2
-                    if (n2.isInBounds(R) && isVoidRegion(n1, n2)) {
-                        yield(LMove(delta1, delta2) to n2)
+        for (dir1 in DXDYDZ_MLEN1) {
+            var prev1 = coord
+            for (s1 in 1..5) {
+                val delta1 = dir1 * s1
+                val n1 = coord + delta1
+                if (n1.isInBounds(R) && isVoidRegion(prev1, n1)) {
+                    for (dir2 in DXDYDZ_MLEN1) {
+                        var prev2 = n1
+                        for (s2 in 1..5) {
+                            val delta2 = dir2 * s2
+                            val n2 = n1 + delta2
+                            if (n2.isInBounds(R) && isVoidRegion(prev2, n2)) {
+                                yield(LMove(delta1, delta2) to n2)
+                            } else {
+                                break  // See comment above.
+                            }
+
+                            prev2 = n2
+                        }
                     }
+                } else {
+                    break  // See comment above.
                 }
+
+                prev1 = n1
             }
         }
     }
@@ -210,23 +233,6 @@ data class Matrix(val R: Int, val coordinates: ByteArray) {
             DeltaCoord(0, 0, -1),
             DeltaCoord(0, -1, 0),
             DeltaCoord(-1, 0, 0))
-
-        val DXDYDZ_SLD: Array<DeltaCoord> = DXDYDZ_MLEN1.asSequence()
-            .flatMap { delta -> buildSequence { for (s in 1..5) yield(delta * s) } }
-            .toList()
-            .asReversed()
-            .toTypedArray()
-
-        val DXDYDZ_LLD: Array<DeltaCoord> = DXDYDZ_MLEN1.asSequence()
-            .flatMap { delta -> buildSequence { for (s in 1..15) yield(delta * s) } }
-            .toList()
-            .asReversed()
-            .toTypedArray()
-
-        init {
-            check(DXDYDZ_SLD.size == 30)
-            check(DXDYDZ_LLD.size == 90)
-        }
 
         fun zerosLike(other: Matrix): Matrix {
             return other.copy(coordinates = ByteArray(other.coordinates.size))

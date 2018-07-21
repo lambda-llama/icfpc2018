@@ -77,7 +77,7 @@ class State(
         val newPos = oldPos + delta
 
 //        volatile[oldPos, newPos] = true
-        assert(matrix.isVoidRegion(oldPos, newPos))
+//        assert(matrix.isVoidRegion(oldPos, newPos))
         assert(newPos.isInBounds(matrix.R)) { "out of bounds: $newPos R = ${matrix.R}" }
 
         bot.pos = newPos
@@ -95,8 +95,8 @@ class State(
         assert(midPos.isInBounds(matrix.R)) { "out of bounds: $midPos R = ${matrix.R}" }
         assert(newPos.isInBounds(matrix.R)) { "out of bounds: $newPos R = ${matrix.R}" }
 
-        assert(matrix.isVoidRegion(oldPos, midPos))
-        assert(matrix.isVoidRegion(midPos, newPos))
+//        assert(matrix.isVoidRegion(oldPos, midPos))
+//        assert(matrix.isVoidRegion(midPos, newPos))
 //        volatile[oldPos, midPos] = true
 //        volatile[midPos, newPos] = true
 
