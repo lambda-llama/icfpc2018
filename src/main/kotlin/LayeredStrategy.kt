@@ -3,25 +3,22 @@ package io.github.lambdallama
 import java.util.*
 import kotlin.coroutines.experimental.buildSequence
 
-class LayeredStrategy(val model: Model) : Strategy {
-    override val name: String = "Layered"
+class LayeredStrategy(
+    val model: Model,
     override val state: State = State.forModel(model)
+) : Strategy {
+    override val name: String = "Layered"
 
     private fun fillableFrom(coord: Coord): Coord? {
-        val r = state.matrix.R - 1
-        val arr = arrayOf(0, -1, 1)
         for (y in 1 downTo -1) {
-            for (x in arr) {
-                for (z in arr) {
-                    if (x < 0 || y < 0 || z < 0 || x > r || y > r || z > r) {
-                        continue
-                    }
+            for (x in 1 downTo -1) {
+                for (z in 1 downTo -1) {
                     val delta = Delta(x, y, z)
                     if (!delta.isNear) {
                         continue
                     }
                     val option = coord + delta
-                    if (!state.matrix[option]) {
+                    if (option.isInBounds(state.matrix) && !state.matrix[option]) {
                         return option
                     }
                 }
@@ -34,11 +31,13 @@ class LayeredStrategy(val model: Model) : Strategy {
         yield(state)
 
         val layer = HashSet<Coord>()
-        for (x in 0 until model.matrix.R) {
-            for (z in 0 until model.matrix.R) {
-                val coord = Coord(x, 0, z)
-                if (model.matrix[coord]) {
-                    layer.add(coord)
+        model.matrix.apply {
+            for (x in from.x..to.x) {
+                for (z in from.z..to.z) {
+                    val coord = Coord(x, 0, z)
+                    if (this[coord]) {
+                        layer.add(coord)
+                    }
                 }
             }
         }
@@ -69,7 +68,7 @@ class LayeredStrategy(val model: Model) : Strategy {
             for (coord in prevLayer) {
                 for (dxdydz in Matrix.NEAR_COORD_DIFFERENCE) {
                     val testCoord = coord + dxdydz
-                    if (testCoord.isInBounds(model.matrix.R) &&
+                    if (testCoord.isInBounds(model.matrix) &&
                             model.matrix[testCoord] &&
                             !state.matrix[testCoord]) {
                         layer.add(testCoord)

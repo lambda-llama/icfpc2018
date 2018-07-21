@@ -30,6 +30,14 @@ sealed class LList<T> {
     abstract fun reversed(): LList<T>
 
     fun cons(value: T): LList<T> = LList.Cons(value, this)
+
+    fun asSequence(): Sequence<T> = buildSequence {
+        var ptr = this@LList
+        while (ptr !is Nil<*>) {
+            yield((ptr as Cons<T>).value)
+            ptr = ptr.next
+        }
+    }
 }
 
 private fun State.heuristic(id: Int, target: Coord): Int {
@@ -42,8 +50,8 @@ private fun State.heuristic(id: Int, target: Coord): Int {
  *
  * Both S- and L-moves are used.
  */
-fun multiSLMove(initial: State, id: Int, target: Coord): Sequence<State> {
-    require(target.isInBounds(initial.matrix.R))
+fun multiSLFind(initial: State, id: Int, target: Coord): Sequence<Command> {
+    require(target.isInBounds(initial.matrix))
 
     val heuristic = TObjectIntHashMap<Coord>(
         Constants.DEFAULT_CAPACITY,
@@ -97,77 +105,87 @@ fun multiSLMove(initial: State, id: Int, target: Coord): Sequence<State> {
         error("failed to multiSLMove: ${initial[id]!!.pos} -> $target")
     }
 
-    // Mutate initial in-place!
-    return buildSequence {
-        var ptr = found.reversed()
-        while (ptr !is LList.Nil) {
-            (ptr as LList.Cons<Command>).value(initial, id)
-            initial.step()
-            yield(initial)
-            ptr = ptr.next
-        }
+    return found.reversed().asSequence()
+}
+
+
+fun multiSLMove(initial: State, id: Int, target: Coord): Sequence<State> {
+    return multiSLFind(initial, id, target).map { command ->
+        // Mutate initial in-place!
+        command(initial, id)
+        initial.step()
+        initial
     }
 }
 
-class Baseline(private val model: Model) : Strategy {
-    override val name: String = "Baseline"
+fun sweep(
+    state: State,
+    model: Model,
+    id: Int,
+    minCoord: Coord,
+    maxCoord: Coord
+) = buildSequence {
+    state.flip(id)
+    state.step()
+    yield(state)
+
+    val b = state[id]!!
+    var x = minCoord.x
+    var dx = 1
+    var z = minCoord.z
+    var dz = 1
+    for (y in minCoord.y..maxCoord.y) {
+        val targetX = if (dx > 0) maxCoord.x else minCoord.x
+        while (x != targetX + dx) {
+            val targetZ = if (dz > 0) maxCoord.z else minCoord.z
+            while (z != targetZ + dz) {
+                val coord = Coord(x, y, z)
+                val bPos = b.pos
+                val delta = coord - bPos
+                state.sMove(id, delta)
+                state.step()
+                yield(state)
+                if (model.matrix[bPos]) {
+                    state.fill(id, -delta)
+                    state.step()
+                    yield(state)
+                }
+                z += dz
+            }
+            x += dx
+
+            z -= dz  // go back.
+            dz = -dz
+        }
+
+        x -= dx  // go back.
+        dx = -dx
+    }
+
+    state.flip(id)
+    state.step()
+    yield(state)
+}
+
+class Baseline(
+    private val model: Model,
     override val state: State = State.forModel(model)
+) : Strategy {
+    override val name: String = "Baseline"
 
     override fun run(): Sequence<State> = buildSequence {
         yield(state)
-        val (minCoord, maxCoord) = model.bbox
-        val initialDelta = arrayOf(
-            Delta(-1, 0, 0),
-            Delta(0, -1, 0),
-            Delta(0, 0, -1)
-        ).first {
-            val n = minCoord + it
-            n.x >= 0 && n.y >= 0 && n.z >= 0
-        }
+        val (minCoord, maxCoord) = model.matrix.bbox()
+        check(minCoord.isInBounds(state.matrix))
+        check(maxCoord.isInBounds(state.matrix))
+        val initialDelta = Matrix.DXDYDZ_MLEN1.first { (minCoord + it).isInBounds(state.matrix) }
 
         val id = 1
-        state.flip(id)
-        state.step()
-        yield(state)
         yieldAll(multiSLMove(state, id, minCoord + initialDelta))
 
-        val b = state[id]!!
-        var x = minCoord.x
-        var dx = 1
-        var z = minCoord.z
-        var dz = 1
-        for (y in minCoord.y..maxCoord.y) {
-            val targetX = if (dx > 0) maxCoord.x else minCoord.x
-            while (x != targetX + dx) {
-                val targetZ = if (dz > 0) maxCoord.z else minCoord.z
-                while (z != targetZ + dz) {
-                    val coord = Coord(x, y, z)
-                    val bPos = b.pos
-                    val delta = coord - bPos
-                    state.sMove(id, delta)
-                    state.step()
-                    yield(state)
-                    if (model.matrix[bPos]) {
-                        state.fill(id, -delta)
-                        state.step()
-                        yield(state)
-                    }
-                    z += dz
-                }
-                x += dx
+        sweep(state, model, id, minCoord, maxCoord)
+        //check(state.matrix == model.matrix)
 
-                z -= dz  // go back.
-                dz = -dz
-            }
-
-            x -= dx  // go back.
-            dx = -dx
-        }
-        check(state.matrix == model.matrix)
-
-        state.flip(id)
-        state.step()
-        yield(state)
         yieldAll(multiSLMove(state, id, Coord.ZERO))
         state.halt(id)
         state.step()

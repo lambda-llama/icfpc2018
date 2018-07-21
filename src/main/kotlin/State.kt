@@ -36,6 +36,13 @@ class State(
         energy,
         expectedBotActionsThisStep)
 
+    fun narrow(from: Coord, to: Coord) = State(
+        matrix.copy(from = from, to = to),
+        bots,
+        harmonics,
+        energy,
+        expectedBotActionsThisStep)
+
     fun addTraceListener(traceListener: TraceListener) {
         traceListeners.add(traceListener)
     }
@@ -82,7 +89,7 @@ class State(
 //        volatile[oldPos, newPos] = true
         assert(matrix.isVoidRegion(oldPos, newPos))
         check(!matrix[newPos])
-        assert(newPos.isInBounds(matrix.R)) { "out of bounds: $newPos R = ${matrix.R}" }
+        assert(newPos.isInBounds(matrix)) { "out of bounds: $newPos" }
 
         bot.pos = newPos
         energy += 2 * delta.mlen
@@ -96,8 +103,8 @@ class State(
         val oldPos = bot.pos
         val midPos = oldPos + delta0
         val newPos = midPos + delta1
-        assert(midPos.isInBounds(matrix.R)) { "out of bounds: $midPos R = ${matrix.R}" }
-        assert(newPos.isInBounds(matrix.R)) { "out of bounds: $newPos R = ${matrix.R}" }
+        assert(midPos.isInBounds(matrix)) { "out of bounds: $midPos" }
+        assert(newPos.isInBounds(matrix)) { "out of bounds: $newPos" }
 
         assert(matrix.isVoidRegion(oldPos, midPos))
         assert(matrix.isVoidRegion(midPos, newPos))
@@ -113,7 +120,7 @@ class State(
         require(delta.isNear)
         val bot = checkNotNull(bots[id])
         val fillPos = bot.pos + delta
-        assert(fillPos.isInBounds(matrix.R))
+        assert(fillPos.isInBounds(matrix))
 
         if (matrix[fillPos]) {
             energy += 6
@@ -130,7 +137,7 @@ class State(
         check(delta.isNear)
         val bot = checkNotNull(bots[id])
         val voidPos = bot.pos + delta
-        assert(voidPos.isInBounds(matrix.R))
+        assert(voidPos.isInBounds(matrix))
 
         if (matrix[voidPos]) {
             matrix[voidPos] = false
@@ -146,7 +153,7 @@ class State(
         val bot = checkNotNull(bots[id])
         check(bot.seeds.any())
         val newBotPos = bot.pos + delta
-        check(newBotPos.isInBounds(matrix.R))
+        check(newBotPos.isInBounds(matrix))
         check(!matrix[newBotPos])
         check(m < bot.seeds.count())
 

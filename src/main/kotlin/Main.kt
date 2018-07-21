@@ -17,6 +17,7 @@ fun getStrategy(args: List<String>, model: Model): Strategy {
         "layered" -> LayeredStrategy(model)
         "grounded" -> GroundedStrategy(model)
         "sculptor" -> SculptorStrategy(model)
+        "split" -> SplitStrategy(model)
         else -> throw Exception("Invalid strategy name `${args[0]}`")
     }
 }

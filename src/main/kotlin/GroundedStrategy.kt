@@ -5,15 +5,16 @@ import io.github.lambdallama.Matrix.Companion.NEAR_COORD_DIFFERENCE
 import java.util.HashSet
 import kotlin.coroutines.experimental.buildSequence
 
-
-class GroundedStrategy(val model: Model) : Strategy {
-    override val name: String = "Grounded"
+class GroundedStrategy(
+    val model: Model,
     override val state: State = State.forModel(model)
+) : Strategy {
+    override val name: String = "Grounded"
 
     private fun fillableFrom(coord: Coord): Coord? {
         return NEAR_COORD_DIFFERENCE
                 .map { coord + it }
-                .filter { it.isInBounds(state.matrix.R) && !state.matrix[it] }
+                .filter { it.isInBounds(state.matrix) && !state.matrix[it] }
                 .maxBy { it.y }
     }
 
@@ -21,10 +22,12 @@ class GroundedStrategy(val model: Model) : Strategy {
         yield(state)
 
         val grounded = HashSet<Coord>()
-        for (x in 0 until model.matrix.R) {
-            for (z in 0 until model.matrix.R) {
-                val coord = Coord(x, 0, z)
-                if (model.matrix[coord]) grounded.add(coord)
+        model.matrix.apply {
+            for (x in from.x..to.x) {
+                for (z in from.z..to.z) {
+                    val coord = Coord(x, 0, z)
+                    if (this[coord]) grounded.add(coord)
+                }
             }
         }
 
@@ -45,7 +48,7 @@ class GroundedStrategy(val model: Model) : Strategy {
                 check(dxdydz.mlen == 1)
                 check(model.matrix[toFill])
                 val testCoord = toFill + dxdydz
-                if (testCoord.isInBounds(model.matrix.R) &&
+                if (testCoord.isInBounds(model.matrix) &&
                         model.matrix[testCoord] &&
                         !state.matrix[testCoord]) {
                     grounded.add(testCoord)

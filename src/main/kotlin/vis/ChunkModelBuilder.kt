@@ -229,8 +229,5 @@ private fun Matrix.blockSides(x: Int, y: Int, z: Int): Int {
 }
 
 private fun Matrix.isEmpty(x: Int, y: Int, z: Int): Boolean {
-    if (x < 0 || x > R) return false
-    if (y < 0 || y > R) return false
-    if (z < 0 || z > R) return false
-    return !this[x, y, z]
+    return Coord(x, y, z).isInBounds(this) && !this[x, y, z]
 }

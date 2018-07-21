@@ -12,9 +12,7 @@ import kotlin.math.max
 
 
 data class Coord(val x: Int, val y: Int, val z: Int) : Comparable<Coord> {
-    fun isInBounds(R: Int): Boolean {
-        return x in 0 until R && y in 0 until R && z in 0 until R
-    }
+    fun isInBounds(matrix: Matrix) = this in matrix.from..matrix.to
 
     operator fun plus(delta: Delta): Coord {
         return Coord(x + delta.dx, y + delta.dy, z + delta.dz)
@@ -69,24 +67,21 @@ data class Delta(val dx: Int, val dy: Int, val dz: Int) : Comparable<Delta> {
     }
 }
 
-data class Matrix(val R: Int, val coordinates: ByteArray) {
+data class Matrix(
+    val R: Int,
+    val from: Coord,
+    val to: Coord,
+    val coordinates: ByteArray
+) {
     /** All coords reachable from a given one via Void and 2-step SMove. */
-    fun voidS2FillNeighborhood(coord: Coord): Sequence<Pair<Array<Command>, Coord>> = buildSequence {
-        for (dir in DXDYDZ_MLEN1) {
-            for (s in 2..5) {
-                val n1: Coord = coord + dir
-                val delta = dir * (s - 1)
-                val n2 = n1 + delta
-                if (n1.isInBounds(R) && n2.isInBounds(R)
-                    && this@Matrix[n1]
-                    && isVoidRegion(n1, n2)
-                ) {
-                    val gtd = arrayOf(Void(dir), SMove(dir * 2), Fill(-dir)) +
-                        if (s > 2) arrayOf(SMove(dir * (s - 2))) else emptyArray()
-                    yield(gtd to n2)
-                } else {
-                    break  // No point in proceeding along this direction.
-                }
+    fun voidS2FillNeighborhood(coord: Coord): Sequence<Pair<Array<Command>, Coord>> {
+        return DXDYDZ_MLEN1.asSequence().mapNotNull { delta ->
+            val n1 = coord + delta
+            val n2 = n1 + delta
+            if (n2.isInBounds(this) && this[n1] && isVoidRegion(n1, n2)) {
+                arrayOf(Void(delta), SMove(delta * 2), Fill(-delta)) to n2
+            } else {
+                null
             }
         }
     }
@@ -98,7 +93,7 @@ data class Matrix(val R: Int, val coordinates: ByteArray) {
             for (s in 1..15) {
                 val delta = dir * s
                 val n = coord + delta
-                if (n.isInBounds(R) && isVoidRegion(prev, n)) {
+                if (n.isInBounds(this@Matrix) && isVoidRegion(prev, n)) {
                     yield(SMove(delta) to n)
                 } else {
                     break  // No point in proceeding along this direction.
@@ -116,13 +111,13 @@ data class Matrix(val R: Int, val coordinates: ByteArray) {
             for (s1 in 1..5) {
                 val delta1 = dir1 * s1
                 val n1 = coord + delta1
-                if (n1.isInBounds(R) && isVoidRegion(prev1, n1)) {
+                if (n1.isInBounds(this@Matrix) && isVoidRegion(prev1, n1)) {
                     for (dir2 in DXDYDZ_MLEN1) {
                         var prev2 = n1
                         for (s2 in 1..5) {
                             val delta2 = dir2 * s2
                             val n2 = n1 + delta2
-                            if (n2.isInBounds(R) && isVoidRegion(prev2, n2)) {
+                            if (n2.isInBounds(this@Matrix) && isVoidRegion(prev2, n2)) {
                                 yield(LMove(delta1, delta2) to n2)
                             } else {
                                 break  // See comment above.
@@ -152,8 +147,8 @@ data class Matrix(val R: Int, val coordinates: ByteArray) {
     }
 
     inline fun forEach(
-        from: Coord = Coord(0, 0, 0),
-        to: Coord = Coord(R - 1, R - 1, R - 1),
+        from: Coord = this.from,
+        to: Coord = this.to,
         block: (Int, Int, Int) -> Unit
     ) {
         for (x in Math.min(from.x, to.x)..Math.max(from.x, to.x)) {
@@ -192,60 +187,37 @@ data class Matrix(val R: Int, val coordinates: ByteArray) {
 
     fun clear() = Arrays.fill(coordinates, 0)
 
+    fun bbox(): Pair<Coord, Coord> {
+        var (minX, minY, minZ) = to
+        var (maxX, maxY, maxZ) = from
+        forEach { x, y, z ->
+            if (this[x, y, z]) {
+                minX = Math.min(minX, x)
+                minY = Math.min(minY, y)
+                minZ = Math.min(minZ, z)
+                maxX = Math.max(maxX, x)
+                maxY = Math.max(maxY, y)
+                maxZ = Math.max(maxZ, z)
+            }
+        }
+
+        val minCoord = Coord(Math.min(minX, maxX), Math.min(minY, maxY), Math.min(minZ, maxZ))
+        val maxCoord = Coord(Math.max(minX, maxX), Math.max(minY, maxY), Math.max(minZ, maxZ))
+        return minCoord to maxCoord
+    }
+
     override fun equals(other: Any?): Boolean {
         return when {
             this === other -> true
             other !is Matrix -> false
-            else -> R == other.R && Arrays.equals(coordinates, other.coordinates)
+            else ->
+                from == other.from &&
+                    to == other.to &&
+                    Arrays.equals(coordinates, other.coordinates)
         }
     }
 
-    override fun hashCode(): Int = 31 * R + Arrays.hashCode(coordinates)
-
-    val isWellFormed: Boolean get() {
-        for (x in 0 until R) {
-            for (y in 0 until R) {
-                for (z in 0 until R) {
-                    if (this[x, y, z] &&
-                        !(x >= 1 && x <= R - 2 &&
-                            y >= 0 && y <= R - 2 &&
-                            z >= 1 && z <= R - 2)) {
-                        return false
-                    }
-                }
-            }
-        }
-
-        fun go(initial: Coord, seen: Matrix) {
-            val q = ArrayDeque<Coord>()
-            q.add(initial)
-            while (q.isNotEmpty()) {
-                val c = q.pop()
-                seen[c] = true
-
-                for (dxdydz in DXDYDZ_MLEN1) {
-                    val n = c + dxdydz
-                    if (n.isInBounds(R) && this[n] && !seen[n]
-                        // vvv debug this later.
-                        && !q.contains(n)) {
-                        q.add(n)
-                    }
-                }
-            }
-        }
-
-        // y == 0 i.e. start from the ground.
-        val seen = zerosLike(this)
-        for (x in 0 until R) {
-            for (z in 0 until R) {
-                if (this[x, 0, z] && !seen[x, 0, z]) {
-                    go(Coord(x, 0, z), seen)
-                }
-            }
-        }
-
-        return seen == this
-    }
+    override fun hashCode(): Int = Objects.hash(R, from, to, coordinates)
 
     companion object {
         val DXDYDZ_MLEN1: Array<Delta> = arrayOf(
@@ -277,29 +249,6 @@ data class Matrix(val R: Int, val coordinates: ByteArray) {
 }
 
 data class Model(val matrix: Matrix) {
-    val bbox: Pair<Coord, Coord> get() {
-        var minX = matrix.R
-        var minY = matrix.R
-        var minZ = matrix.R
-        var maxX = 0
-        var maxY = 0
-        var maxZ = 0
-        matrix.forEach { x, y, z ->
-            if (matrix[x, y, z]) {
-                minX = Math.min(minX, x)
-                minY = Math.min(minY, y)
-                minZ = Math.min(minZ, z)
-                maxX = Math.max(maxX, x)
-                maxY = Math.max(maxY, y)
-                maxZ = Math.max(maxZ, z)
-            }
-        }
-
-        val minCoord = Coord(Math.min(minX, maxX), Math.min(minY, maxY), Math.min(minZ, maxZ))
-        val maxCoord = Coord(Math.max(minX, maxX), Math.max(minY, maxY), Math.max(minZ, maxZ))
-        return minCoord to maxCoord
-    }
-
     companion object {
         fun parse(path: File): Model {
             val buf = ByteBuffer.wrap(path.readBytes())
@@ -310,7 +259,7 @@ data class Model(val matrix: Matrix) {
                 TODO()
             }
 
-            return Model(Matrix(R, coordinates))
+            return Model(Matrix(R, Coord.ZERO, Coord(R - 1, R - 1, R - 1), coordinates))
         }
     }
 }
