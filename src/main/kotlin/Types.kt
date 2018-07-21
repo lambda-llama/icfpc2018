@@ -132,6 +132,10 @@ data class Matrix(val R: Int, val coordinates: ByteArray) {
         return b and (1 shl (offset % 8)) != 0
     }
 
+    operator fun set(from: Coord, to: Coord, value: Boolean) {
+        forEach(from, to) { x, y, z -> this[x, y, z] = value }
+    }
+
     operator fun set(c: Coord, value: Boolean) = set(c.x, c.y, c.z, value)
 
     operator fun set(x: Int, y: Int, z: Int, value: Boolean) {
@@ -144,6 +148,8 @@ data class Matrix(val R: Int, val coordinates: ByteArray) {
             (b and mask.inv()).toByte()
         }
     }
+
+    fun clear() = Arrays.fill(coordinates, 0)
 
     override fun equals(other: Any?): Boolean {
         return when {
