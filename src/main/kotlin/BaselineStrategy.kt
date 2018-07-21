@@ -30,6 +30,10 @@ sealed class LList<T> {
     abstract fun reversed(): LList<T>
 }
 
+private fun State.heuristic(id: Int, target: Coord): Long {
+    return energy + (this[id]!!.pos - target).mlen
+}
+
 /**
  * Moves the bot with ID `id` to `target` using minimal energy.
  *
@@ -38,13 +42,9 @@ sealed class LList<T> {
 fun multiSLMove(initial: State, id: Int, target: Coord): Sequence<State> {
     require(target.isInBounds(initial.matrix.R))
 
-    val seen = TObjectLongHashMap<Coord>(
-        Constants.DEFAULT_CAPACITY,
-        Constants.DEFAULT_LOAD_FACTOR,
-        Long.MAX_VALUE)
     val next = HashSet<Coord>()
     val meta = HashMap<Coord, Pair<State, LList<Command>>>()
-    val q = PriorityQueue<Coord>(compareBy { meta[it]!!.first.energy })
+    val q = PriorityQueue<Coord>(compareBy { meta[it]!!.first.heuristic(id, target) })
     meta[initial[id]!!.pos] = initial to LList.Nil()
     q.add(initial[id]!!.pos)
     var found: LList<Command>? = null
@@ -63,9 +63,8 @@ fun multiSLMove(initial: State, id: Int, target: Coord): Sequence<State> {
                 val split = state.shallowSplit()
                 command(split, id)
                 split.step()
-                if (split.energy + (n - target).mlen < seen[n]) {
+                if (n !in meta || split.heuristic(id, target) < meta[n]!!.first.heuristic(id, target)) {
                     meta[n] = split to LList.Cons(command, commands)
-                    seen.put(n, split.energy)
                     q.add(n)
                     next.add(n)
                 }
