@@ -49,18 +49,18 @@ fun io.github.lambdallama.State.toVisModel(): Model {
     }
     botFb.addMeshFromBuffers(botMeshBuilder)
 
-    val highlight: Coord? = null
-    if (highlight != null) {
-        val hiFb = FaceBuffer()
-        addBlock(hiFb, matrix, ChunkBlockSide.ALL, highlight.x, highlight.y, highlight.z)
-        val mb= builder.part(
-                "hightlihgh",
-                GL20.GL_TRIANGLES,
-                (VertexAttributes.Usage.Position or VertexAttributes.Usage.Normal).toLong(),
-                Material(ColorAttribute.createDiffuse(Color.RED))
-        )
-        hiFb.addMeshFromBuffers(mb)
+    val highlight: List<Coord> = listOf(Coord(52,23,35), Coord(50,22,34))
+    val hiFb = FaceBuffer()
+    highlight.forEach { pos ->
+        addBlock(hiFb, matrix, ChunkBlockSide.ALL, pos.x, pos.y, pos.z)
     }
+    val mb= builder.part(
+            "hightlihgh",
+            GL20.GL_TRIANGLES,
+            (VertexAttributes.Usage.Position or VertexAttributes.Usage.Normal).toLong(),
+            Material(ColorAttribute.createDiffuse(Color.RED))
+    )
+    hiFb.addMeshFromBuffers(mb)
 
 
     return builder.end()
