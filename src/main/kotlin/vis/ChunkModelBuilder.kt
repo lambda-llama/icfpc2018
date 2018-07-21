@@ -10,6 +10,7 @@ import com.badlogic.gdx.graphics.g3d.attributes.IntAttribute
 import com.badlogic.gdx.graphics.g3d.utils.MeshPartBuilder
 import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder
 import com.badlogic.gdx.math.Vector3
+import io.github.lambdallama.Coord
 import io.github.lambdallama.Harmonics
 import io.github.lambdallama.Matrix
 
@@ -43,12 +44,24 @@ fun io.github.lambdallama.State.toVisModel(): Model {
     )
 
     val botFb = FaceBuffer()
-    bots.forEach { b ->
-        if (b != null) {
-            addBlock(botFb, matrix, ChunkBlockSide.ALL, b.pos.x, b.pos.y, b.pos.z)
-        }
+    bots.mapNotNull { it?.pos }.forEach { pos ->
+        addBlock(botFb, matrix, ChunkBlockSide.ALL, pos.x, pos.y, pos.z)
     }
     botFb.addMeshFromBuffers(botMeshBuilder)
+
+    val highlight: Coord? = Coord(3, 11, 19)
+    if (highlight != null) {
+        val hiFb = FaceBuffer()
+        addBlock(hiFb, matrix, ChunkBlockSide.ALL, highlight.x, highlight.y, highlight.z)
+        val mb= builder.part(
+                "hightlihgh",
+                GL20.GL_TRIANGLES,
+                (VertexAttributes.Usage.Position or VertexAttributes.Usage.Normal).toLong(),
+                Material(ColorAttribute.createDiffuse(Color.RED))
+        )
+        hiFb.addMeshFromBuffers(mb)
+    }
+
 
     return builder.end()
 }
