@@ -18,6 +18,7 @@ dependencies {
     compile(kotlin("stdlib-jdk8"))
     compile("khttp:khttp:0.1.0")
     compile("com.google.guava:guava:25.1-jre")
+    compile("net.sf.trove4j:trove4j:3.0.3")
     compile("com.badlogicgames.gdx:gdx:$gdxVersion")
     compile("com.badlogicgames.gdx:gdx-backend-lwjgl:$gdxVersion")
     compile("com.badlogicgames.gdx:gdx-freetype:$gdxVersion")

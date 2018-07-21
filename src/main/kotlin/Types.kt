@@ -86,7 +86,7 @@ data class Matrix(val R: Int, val coordinates: ByteArray) {
             val n1 = coord + delta1
             if (n1.isInBounds(R) && isVoidRegion(coord, n1)) {
                 for (delta2 in DXDYDZ_SLD) {
-                    val n2 = coord + delta2
+                    val n2 = n1 + delta2
                     if (n2.isInBounds(R) && isVoidRegion(n1, n2)) {
                         yield(LMove(delta1, delta2) to n2)
                     }

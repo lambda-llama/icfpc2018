@@ -1,5 +1,7 @@
 package io.github.lambdallama
 
+import gnu.trove.impl.Constants
+import gnu.trove.map.hash.TObjectLongHashMap
 import java.util.*
 import kotlin.coroutines.experimental.buildSequence
 
@@ -36,8 +38,10 @@ sealed class LList<T> {
 fun multiSLMove(initial: State, id: Int, target: Coord): Sequence<State> {
     require(target.isInBounds(initial.matrix.R))
 
-    val seen = HashSet<Coord>()
-    val next = HashSet<Coord>()
+    val seen = TObjectLongHashMap<Coord>(
+        Constants.DEFAULT_CAPACITY,
+        Constants.DEFAULT_LOAD_FACTOR,
+        Long.MAX_VALUE)
     val q = PriorityQueue<Pair<State, LList<Command>>>(compareBy { it.first.energy })
     q.add(initial.shallowSplit() to LList.Nil())
     var found: LList<Command>? = null
@@ -49,15 +53,13 @@ fun multiSLMove(initial: State, id: Int, target: Coord): Sequence<State> {
             break
         }
 
-        seen.add(b.pos)
-
         for ((command, n) in state.matrix.sNeighborhood(b.pos) + state.matrix.lNeighborhood(b.pos)) {
-            if (n !in seen && n !in next) {
-                val split = state.shallowSplit()
-                command(split, b.id)
-                split.step()
+            val split = state.shallowSplit()
+            command(split, b.id)
+            split.step()
+            if (split.energy < seen[n]) {
+                seen.put(n, split.energy)
                 q.add(split to LList.Cons(command, commands))
-                next.add(n)
             }
         }
     }
