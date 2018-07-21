@@ -12,29 +12,25 @@ import com.badlogic.gdx.math.Matrix4
 import com.badlogic.gdx.scenes.scene2d.Stage
 import com.badlogic.gdx.scenes.scene2d.ui.Label
 import com.badlogic.gdx.utils.Align
-import io.github.lambdallama.State
 import vis.floorModel
 import vis.toVisModel
 import com.badlogic.gdx.utils.viewport.ScreenViewport
-import io.github.lambdallama.Command
-import io.github.lambdallama.TraceListener
-import java.util.*
+import io.github.lambdallama.CurrentState
+import io.github.lambdallama.Snapshot
 
 
-class VoxelEngine(private val strategyName: String, private var state: State)
-    : ApplicationAdapter(), TraceListener {
+class VoxelEngine(
+        private val strategyName: String,
+        val currentState: CurrentState
+) : ApplicationAdapter() {
     lateinit var camera: PerspectiveCamera
     private var chunkModel: Model? = null
     lateinit var floorModel: Model
     lateinit var modelBatch: ModelBatch
     lateinit var environment: Environment
-    private var sleepTimeMs: Long = 250
-    private var paused: Boolean = true
     private var step: Boolean = false
     private var stage: Stage? = null
     private var info: Label? = null
-    private var lastCommands: SortedMap<Int, Command> = TreeMap()
-    private var totalSteps: Int = 0
 
     private var transform = Matrix4().idt()
 
@@ -54,8 +50,9 @@ class VoxelEngine(private val strategyName: String, private var state: State)
         environment.set(ColorAttribute(ColorAttribute.AmbientLight, 0.4f, 0.4f, 0.4f, 1f))
         environment.add(DirectionalLight().set(0.8f, 0.8f, 0.8f, -1f, -0.8f, -0.2f))
 
-        chunkModel = state.toVisModel()
-        floorModel = state.floorModel()
+        val snapshot = currentState.snapshot
+        chunkModel = snapshot.state.toVisModel()
+        floorModel = snapshot.state.floorModel()
 
         val generator = FreeTypeFontGenerator(Gdx.files.internal("fonts/ubuntu.ttf"))
         val param = FreeTypeFontGenerator.FreeTypeFontParameter()
@@ -65,30 +62,26 @@ class VoxelEngine(private val strategyName: String, private var state: State)
         generator.dispose()
 
         info = Label("", Label.LabelStyle(font, Color.LIGHT_GRAY))
-        info?.setPosition(10.0f, Gdx.graphics.height.toFloat() - 10.0f)
-        info?.setAlignment(Align.topLeft, Align.topLeft)
+                .apply {
+                    setPosition(10.0f, Gdx.graphics.height.toFloat() - 10.0f)
+                    setAlignment(Align.topLeft, Align.topLeft)
+                }
         stage?.addActor(info)
     }
 
-    override fun onStep(commands: SortedMap<Int, Command>) {
-        synchronized(this) {
-            lastCommands = commands
-            totalSteps += 1
-        }
-    }
-
-    private fun updateInfo() {
+    private fun updateInfo(snapshot: Snapshot, delayMs: Double, paused: Boolean) {
+        val state = snapshot.state
         val sb = StringBuilder()
                 .appendln("Strategy: ${strategyName}")
-                .appendln("Refresh interval: ${sleepTimeMs}ms" + (if (paused) " (paused)" else ""))
+                .appendln("Refresh interval: ${delayMs}ms" + (if (paused) " (paused)" else ""))
                 .appendln("Number of bots: ${state.bots.count()}")
                 .appendln("Harmonics: ${state.harmonics}")
-                .appendln("Steps: ${totalSteps}")
+                .appendln("Steps: ${snapshot.totalSteps}")
                 .appendln("Energy: ${state.energy}")
                 .appendln("")
                 .appendln("Last step commands:")
 
-        for (pair in lastCommands) {
+        for (pair in snapshot.lastCommands) {
             sb.appendln("      ${pair.key} ${state.getBot(pair.key)?.pos}: ${pair.value}")
         }
 
@@ -100,27 +93,17 @@ class VoxelEngine(private val strategyName: String, private var state: State)
                 .appendln("      speed: Z/X")
                 .appendln("      pause: C")
                 .appendln("      step: SPACE")
-        synchronized(this) {
-            info?.setText(sb.toString())
-        }
+        info?.setText(sb.toString())
     }
 
-    fun update(newState: State) {
-        while (paused && !step) {
-            updateInfo()
-            Thread.sleep(10)
-        }
-        if (step) {
-            step = !step
-        }
-        state = newState
-        updateInfo()
-        Thread.sleep(if (paused) 10 else sleepTimeMs)
+    fun update(snapshot: Snapshot, delayMs: Double, paused: Boolean) {
+        updateInfo(snapshot, delayMs, paused)
+        chunkModel?.dispose()
+        chunkModel = snapshot.state.toVisModel()
     }
 
     override fun render() {
-        chunkModel?.dispose()
-        chunkModel = state.toVisModel()
+        update(currentState.snapshot, currentState.delayMs, currentState.paused)
 
         Gdx.gl.glViewport(0, 0, Gdx.graphics.width, Gdx.graphics.height)
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT or GL20.GL_DEPTH_BUFFER_BIT)
@@ -132,24 +115,19 @@ class VoxelEngine(private val strategyName: String, private var state: State)
         modelBatch.render(ModelInstance(floorModel, transform), environment)
         modelBatch.end()
 
-        synchronized(this) {
-            stage?.draw()
-        }
+        stage?.draw()
     }
 
     private fun keyboardControls() {
         val speed = 2f
         if (Gdx.input.isKeyPressed(Input.Keys.Z)) {
-            sleepTimeMs -= 10
-            sleepTimeMs = Math.max(sleepTimeMs, 10)
+            currentState.delayMs *= 0.95
         }
         if (Gdx.input.isKeyPressed(Input.Keys.X)) {
-            sleepTimeMs += 10
-            sleepTimeMs = Math.min(sleepTimeMs, 500)
+            currentState.delayMs *= 1.05
         }
         if (Gdx.input.isKeyJustPressed(Input.Keys.C)) {
-            paused = !paused
-            updateInfo()
+            currentState.paused = !currentState.paused
         }
         if (Gdx.input.isKeyJustPressed(Input.Keys.SPACE)) {
             step = true

@@ -7,6 +7,8 @@ import io.github.lambdallama.vis.VoxelEngine
 import java.io.DataOutputStream
 import java.io.File
 import java.util.concurrent.TimeUnit
+import java.util.*
+import kotlin.collections.HashMap
 import kotlin.concurrent.thread
 
 fun getStrategy(args: List<String>, model: Model): Strategy {
@@ -19,7 +21,7 @@ fun getStrategy(args: List<String>, model: Model): Strategy {
 }
 
 fun main(args: Array<String>) {
-    var args = (System.getenv("ARGS") ?: "baseline").split(" ").toList()
+    var args = (System.getenv("ARGS") ?: "layered").split(" ").toList()
 
     if (args[0] == "batch") {
         val batchFilePath = args[1]
@@ -61,13 +63,17 @@ private fun runNonInteractive(modelFilePath: String, traceFilePath: String, args
 
 private fun runInteractive(modelFilePath: String, traceFilePath: String, args: List<String>) {
     val strategy = createStrategy(modelFilePath, traceFilePath, args)
-    val engine = VoxelEngine(strategy.name, strategy.state)
-    strategy.state.addTraceListener(engine)
+    val currentState = CurrentState(strategy.state)
+    val engine = VoxelEngine(strategy.name, currentState)
+    strategy.state.addTraceListener(currentState)
     thread {
         for (state in strategy.run()) {
-            engine.update(state)
+            currentState.setState(state)
+            Thread.sleep(currentState.delayMs.toLong())
+            while (currentState.paused) {
+                Thread.sleep(100)
+            }
         }
-
         println("Total energy: " + strategy.state.energy)
     }
     LwjglApplication(engine, LwjglApplicationConfiguration().apply {
@@ -76,3 +82,36 @@ private fun runInteractive(modelFilePath: String, traceFilePath: String, args: L
         height = 768
     })
 }
+
+data class Snapshot(
+        val state: State,
+        val lastCommands: SortedMap<Int, Command> = TreeMap(),
+        val totalSteps: Int = 0
+)
+
+data class CurrentState(
+        @Volatile var snapshot: Snapshot,
+        @Volatile var delayMs: Double = 250.0,
+        @Volatile var paused: Boolean = false
+) : TraceListener {
+    constructor(state: State) : this(Snapshot(state))
+
+    override fun onStep(commands: SortedMap<Int, Command>) = updateSnapshot { old ->
+        old.copy(lastCommands = commands, totalSteps = old.totalSteps + 1)
+    }
+
+    fun setState(state: State) = updateSnapshot { old -> old.copy(state = cloneState(state)) }
+
+    private fun updateSnapshot(f: (Snapshot) -> Snapshot) {
+        synchronized(this) {
+            snapshot = f(snapshot)
+        }
+    }
+}
+
+fun cloneState(state: State): State = State(
+        Matrix(state.matrix.R, Arrays.copyOf(state.matrix.coordinates, state.matrix.coordinates.size)),
+        state.bots.map { (k, b) ->
+            k to Bot(b.id, b.pos, TreeSet(b.seeds))
+        }.toMap(HashMap())
+)
