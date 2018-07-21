@@ -33,7 +33,7 @@ fun main(args: Array<String>) {
             runNonInteractive(modelFilePath, traceFilePath, args)
         }
     } else {
-        runInteractive("problemsL/LA017_tgt.mdl", "out.nbt", args)
+        runInteractive("problemsL/LA001_tgt.mdl", "out.nbt", args)
     }
 }
 

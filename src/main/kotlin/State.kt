@@ -81,7 +81,7 @@ class State(
         check(newPos.isInBounds(matrix.R)) { "out of bounds: $newPos R = ${matrix.R}" }
 
         volatile[oldPos, newPos] = true
-        assert(matrix.isVoidRegion(oldPos, newPos))
+        check(matrix.isVoidRegion(oldPos, newPos))
 
         bot.pos = newPos
         energy += 2 * delta.mlen
@@ -98,8 +98,8 @@ class State(
         check(midPos.isInBounds(matrix.R))
         check(newPos.isInBounds(matrix.R))
 
-        assert(matrix.isVoidRegion(oldPos, midPos))
-        assert(matrix.isVoidRegion(midPos, newPos))
+        check(matrix.isVoidRegion(oldPos, midPos))
+        check(matrix.isVoidRegion(midPos, newPos))
         volatile[oldPos, midPos] = true
         volatile[midPos, newPos] = true
 
