@@ -147,7 +147,7 @@ class State(
 
         val volume = matrix.R * matrix.R * matrix.R
         energy += (if (harmonics == Harmonics.High) 30 else 3) * volume
-        energy += 24 * expectedBotActionsThisStep
+        energy += 20 * expectedBotActionsThisStep
 
         expectedBotActionsThisStep = bots.count()
         val commands = botCommands.toSortedMap()
