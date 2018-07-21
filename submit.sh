@@ -4,7 +4,9 @@ set -ex
 PRIVATE_ID=3d776dc473c346dc908333ea0288d6dd
 NAME=$(date "+%d%b-%H:%M")
 
-zip --password $PRIVATE_ID submission.zip submission/*
+pushd submission
+zip --password $PRIVATE_ID ../submission.zip ./*
+popd
 
 pushd ./icfpc2018-submissions
 
