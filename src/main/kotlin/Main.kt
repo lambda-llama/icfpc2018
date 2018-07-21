@@ -8,7 +8,6 @@ import java.io.DataOutputStream
 import java.io.File
 import java.util.concurrent.TimeUnit
 import java.util.*
-import kotlin.collections.HashMap
 import kotlin.concurrent.thread
 
 fun getStrategy(args: List<String>, model: Model): Strategy {
@@ -16,6 +15,7 @@ fun getStrategy(args: List<String>, model: Model): Strategy {
         "baseline" -> Baseline(model)
         "replay" -> ReplayStrategy(model, File(args[1]))
         "layered" -> LayeredStrategy(model)
+        "grounded" -> GroundedStrategy(model)
         else -> throw Exception("Invalid strategy name `${args[0]}`")
     }
 }
@@ -39,7 +39,7 @@ fun main(args: Array<String>) {
             args = args.drop(2)
             runNonInteractive(modelFilePath, traceFilePath, args)
         }
-        else -> runInteractive("problemsF/FA043_tgt.mdl", "out.nbt", args)
+        else -> runInteractive("problemsF/FA043_tgt.mdl", "out.nbt", listOf("grounded"))
     }
 }
 
