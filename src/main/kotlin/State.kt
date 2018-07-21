@@ -81,6 +81,7 @@ class State(
 
 //        volatile[oldPos, newPos] = true
         assert(matrix.isVoidRegion(oldPos, newPos))
+        check(!matrix[newPos])
         assert(newPos.isInBounds(matrix.R)) { "out of bounds: $newPos R = ${matrix.R}" }
 
         bot.pos = newPos
