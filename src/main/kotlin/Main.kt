@@ -25,7 +25,7 @@ fun main(args: Array<String>) {
     if (args[0] == "batch") {
         val batchFilePath = args[1]
         args = args.drop(2)
-        File(batchFilePath).readLines().parallelStream().forEach { line ->
+        for (line in File(batchFilePath).readLines()) {
             val parts = line.split(" ")
             val modelFilePath = parts[0]
             val traceFilePath = parts[1]
