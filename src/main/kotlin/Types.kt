@@ -97,13 +97,9 @@ data class Matrix(val R: Int, val coordinates: ByteArray) {
 
     /** Returns true if the [from, to] region contains no Full coords. */
     fun isVoidRegion(from: Coord, to: Coord): Boolean {
-        for (x in from.x..to.x) {
-            for (y in from.y..to.y) {
-                for (z in from.z..to.z) {
-                    if (this[x, y, z]) {
-                        return false
-                    }
-                }
+        forEach(from, to) { x, y, z ->
+            if (this[x, y, z]) {
+                return false
             }
         }
 
@@ -115,9 +111,9 @@ data class Matrix(val R: Int, val coordinates: ByteArray) {
         to: Coord = Coord(R - 1, R - 1, R - 1),
         block: (Int, Int, Int) -> Unit
     ) {
-        for (x in from.x..to.x) {
-            for (y in from.y..to.y) {
-                for (z in from.z..to.z) {
+        for (x in Math.min(from.x, to.x)..Math.max(from.x, to.x)) {
+            for (y in Math.min(from.y, to.y)..Math.min(from.y, to.y)) {
+                for (z in Math.min(from.z, to.z)..Math.min(from.z, to.z)) {
                     block(x, y, z)
                 }
             }
