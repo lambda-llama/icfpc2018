@@ -80,7 +80,7 @@ fun io.github.lambdallama.State.toVisModel(): Model {
             GL20.GL_TRIANGLES,
             (VertexAttributes.Usage.Position or VertexAttributes.Usage.Normal).toLong(),
             Material(ColorAttribute.createDiffuse(
-                    if (harmonics == Harmonics.High) Color.FIREBRICK else Color.SKY))
+                    if (harmonics == Harmonics.High) Color.VIOLET else Color.SKY))
     )
 
     val fbBot = FaceBuffer()
@@ -91,7 +91,7 @@ fun io.github.lambdallama.State.toVisModel(): Model {
 
     /* Highlighting */
 
-    val highlight: List<Coord> = listOf(Coord(9,11,14), Coord(10,11,14))
+    val highlight: List<Coord> = listOf()
     val hiFb = FaceBuffer()
     highlight.forEach { pos ->
         addBlock(hiFb, matrix, ChunkBlockSide.ALL, pos.x, pos.y, pos.z)

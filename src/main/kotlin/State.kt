@@ -223,7 +223,7 @@ class State(
     fun step() {
         check(botCommands.count() == expectedBotActionsThisStep)
         // VERY EXPENSIVE CHECK
-        // check(matrix.isGrounded())
+//         check(harmonics == Harmonics.High || matrix.isGrounded())
 
 //        volatile.clear()
 

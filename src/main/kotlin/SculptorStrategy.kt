@@ -7,6 +7,8 @@ class SculptorStrategy(val mode: Mode, val model: Model?, source: Model?) : Stra
     override val name: String = "sculptor"
     override val state: State = State.create(mode, model?.matrix, source?.matrix)
 
+    private val cBeams = model?.matrix?.let { criticalBeams(it) }.orEmpty()
+
     override fun run(): Sequence<State> {
         return when (mode) {
             Mode.Assembly -> runAssembly()
@@ -316,6 +318,18 @@ class SculptorStrategy(val mode: Mode, val model: Model?, source: Model?) : Stra
         }
 
         fun moveSculpt(delta: Delta): Sequence<State> = buildSequence {
+            fun flipHarmonics() {
+                state.flip(bots[0].id)
+                bots.drop(1).forEach { state.wait(it.id) }
+                state.step()
+            }
+
+            val newPos = bots[0].pos + delta
+            if (cBeams.contains(Beam(newPos.x, newPos.y))) {
+                flipHarmonics()
+                yield(state)
+            }
+
             bots.forEach { b -> state.void(b.id, delta) }
             state.step()
             yield(state)
@@ -328,6 +342,11 @@ class SculptorStrategy(val mode: Mode, val model: Model?, source: Model?) : Stra
                 bots.forEach { b -> if (state.targetMatrix[b.pos - delta]) state.fill(b.id, -delta) else state.wait(b.id) }
                 state.step()
                 yield(state)
+                val oldPos = bots[0].pos - delta
+                if (cBeams.contains(Beam(oldPos.x, oldPos.y))) {
+                    flipHarmonics()
+                    yield(state)
+                }
             }
         }
 
@@ -491,7 +510,7 @@ fun criticalBeams(m: Matrix): Set<Beam> {
     }
 
     val beams = (bb.first.x..bb.second.x).flatMap { x ->
-        (2..bb.second.y).map { y -> Beam(x, y) }
+        (0..bb.second.y).map { y -> Beam(x, y) }
     }
 
     return beams.filter { isCritical(it) }.toSet()
