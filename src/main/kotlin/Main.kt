@@ -54,9 +54,9 @@ fun main(args: Array<String>) {
         }
         "vis" -> {
             val mode = if (args.count() > 1) getMode(args[1]) else Mode.Assembly
-            val modelFilePath = if (args.count() > 2) args[2] else "problemsF/FA043_tgt.mdl"
+            val modelFilePath = if (args.count() > 2) args[2] else "problemsF/FA061_tgt.mdl"
             val traceFilePath = "out.nbt"
-            val strategyArgs = if (args.count() > 3) args.drop(3) else listOf("grounded")
+            val strategyArgs = if (args.count() > 3) args.drop(3) else listOf("sculptor")
             runInteractive(mode, modelFilePath, traceFilePath, strategyArgs)
         }
         else -> throw Exception("Invalid execution mode")

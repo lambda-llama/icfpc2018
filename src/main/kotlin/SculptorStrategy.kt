@@ -331,3 +331,63 @@ class SculptorStrategy(val mode: Mode, val model: Model?, source: Model?) : Stra
         }
     }
 }
+
+
+data class Beam(val x: Int, val y: Int) {
+    fun contains(c: Coord): Boolean =
+            c.x == x && c.y == y
+}
+
+enum class WalkState {
+    InProgress,
+    HasLowerGround,
+    LowerGroundUnreachable
+
+}
+
+val DeltasDown = arrayOf(
+        Delta(0, -1, 0),
+        Delta(0, 0, 1),
+        Delta(0, 0, -1),
+        Delta(1, 0, 0),
+        Delta(-1, 0, 0),
+        Delta(0, 1, 0)
+)
+
+
+/**
+ * Compute the beams cutting through which risks making some voxels ungrounded
+ */
+fun criticalBeams(m: Matrix): Set<Beam> {
+    val bb = m.bbox()
+    fun isCritical(b: Beam): Boolean {
+
+        val cache = HashMap<Coord, WalkState>()
+        fun hasLowerGround(c: Coord): Boolean {
+            if (b.contains(c) || !c.isInBounds(m) || !m[c]) return false
+            if (c.y <= b.y) return true
+            return when (cache[c]) {
+                WalkState.InProgress -> false
+                WalkState.HasLowerGround -> true
+                WalkState.LowerGroundUnreachable -> false
+                null -> {
+                    cache[c] = WalkState.InProgress
+                    val res = Matrix.DXDYDZ_MLEN1.any { d -> hasLowerGround(c + d) }
+                    cache[c] = if (res) WalkState.HasLowerGround else WalkState.LowerGroundUnreachable
+                    res
+                }
+            }
+        }
+
+        val coordsAbove = (bb.first.z..bb.second.z)
+                .map { z -> Coord(b.x, b.y + 1, z) }
+                .filter { it.isInBounds(m) && m[it] }
+        return coordsAbove.any { !hasLowerGround(it) }
+    }
+
+    val beams = (bb.first.x..bb.second.x).flatMap { x ->
+        (2..bb.second.y).map { y -> Beam(x, y) }
+    }
+
+    return beams.filter { isCritical(it) }.toSet()
+}

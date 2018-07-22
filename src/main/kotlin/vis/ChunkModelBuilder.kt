@@ -13,6 +13,7 @@ import com.badlogic.gdx.math.Vector3
 import io.github.lambdallama.Coord
 import io.github.lambdallama.Harmonics
 import io.github.lambdallama.Matrix
+import io.github.lambdallama.criticalBeams
 
 private const val blockSize = .5f
 private const val halfSize = blockSize * 0.5f
