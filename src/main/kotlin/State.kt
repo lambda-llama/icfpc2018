@@ -3,6 +3,7 @@ package io.github.lambdallama
 import java.util.*
 
 class State(
+    val model: Model,
     val matrix: Matrix,
     val bots: Array<Bot?>,
 //    private val volatile: Matrix = Matrix.zerosLike(matrix),
@@ -23,6 +24,7 @@ class State(
     /* General public methods */
 
     fun split() = State(
+        model,
         matrix.copy(coordinates = matrix.coordinates.clone()),
         Array(bots.size) { bots[it]?.copy() },
         harmonics,
@@ -30,6 +32,7 @@ class State(
         expectedBotActionsThisStep)
 
     fun shallowSplit() = State(
+        model,
         matrix,
         Array(bots.size) { bots[it]?.copy() },
         harmonics,
@@ -37,6 +40,7 @@ class State(
         expectedBotActionsThisStep)
 
     fun narrow(from: Coord, to: Coord) = State(
+        model,
         matrix.copy(from = from, to = to),
         bots,
         harmonics,
@@ -259,7 +263,7 @@ class State(
             // TODO: use the model matrix?
             val bots = Array<Bot?>(20 + 1) { null }
             bots[1] = Bot(1, Coord.ZERO, (2..20).toSortedSet())
-            return State(Matrix.zerosLike(model.matrix), bots)
+            return State(model, Matrix.zerosLike(model.matrix), bots)
         }
     }
 }

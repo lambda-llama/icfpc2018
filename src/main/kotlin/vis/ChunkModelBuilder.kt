@@ -20,22 +20,61 @@ private const val halfSize = blockSize * 0.5f
 fun io.github.lambdallama.State.toVisModel(): Model {
     val builder = ModelBuilder()
     builder.begin()
-    val meshBuilder: MeshPartBuilder
-    meshBuilder = builder.part(
+
+    /* Bounds */
+
+    builder.node()
+
+    val boundsMeshBuilder = builder.part(
+            "target",
+            GL20.GL_LINE_STRIP,
+            (VertexAttributes.Usage.Position or VertexAttributes.Usage.Normal).toLong(),
+            Material(ColorAttribute.createDiffuse(Color.GREEN))
+    )
+
+    val fbBounds = FaceBuffer()
+    addBlock(fbBounds, ChunkBlockSide.ALL, Vector3(), model.matrix.R * blockSize)
+    fbBounds.addMeshFromBuffers(boundsMeshBuilder)
+
+    /* Wireframe target */
+
+    builder.node()
+
+    val targetMeshBuilder = builder.part(
+            "target",
+            GL20.GL_LINE_STRIP,
+            (VertexAttributes.Usage.Position or VertexAttributes.Usage.Normal).toLong(),
+            Material(ColorAttribute.createDiffuse(Color.LIGHT_GRAY))
+    )
+
+    val fbTarget = FaceBuffer()
+    model.matrix.forEach { x, y, z ->
+        if (model.matrix[x, y, z] && !matrix[x, y, z]) {
+            addBlock(fbTarget, matrix, model.matrix.blockSides(x, y, z), x, y, z)
+        }
+    }
+    fbTarget.addMeshFromBuffers(targetMeshBuilder)
+
+    /* Filled blocks */
+
+    builder.node()
+
+    val meshBuilder = builder.part(
             "potato",
             GL20.GL_TRIANGLES,
             (VertexAttributes.Usage.Position or VertexAttributes.Usage.Normal).toLong(),
             Material(ColorAttribute.createDiffuse(Color.FOREST))
     )
 
-    val fb = FaceBuffer()
-    matrix.forEach { x, y, z -> addBlock(fb, matrix, matrix.blockSides(x, y, z), x, y, z) }
-    fb.addMeshFromBuffers(meshBuilder)
+    val fbFilled = FaceBuffer()
+    matrix.forEach { x, y, z -> addBlock(fbFilled, matrix, matrix.blockSides(x, y, z), x, y, z) }
+    fbFilled.addMeshFromBuffers(meshBuilder)
+
+    /* Bots */
 
     builder.node()
 
-    val botMeshBuilder: MeshPartBuilder
-    botMeshBuilder = builder.part(
+    val botMeshBuilder = builder.part(
             "bot",
             GL20.GL_TRIANGLES,
             (VertexAttributes.Usage.Position or VertexAttributes.Usage.Normal).toLong(),
@@ -43,13 +82,15 @@ fun io.github.lambdallama.State.toVisModel(): Model {
                     if (harmonics == Harmonics.High) Color.FIREBRICK else Color.SKY))
     )
 
-    val botFb = FaceBuffer()
+    val fbBot = FaceBuffer()
     bots.mapNotNull { it?.pos }.forEach { pos ->
-        addBlock(botFb, matrix, ChunkBlockSide.ALL, pos.x, pos.y, pos.z)
+        addBlock(fbBot, matrix, ChunkBlockSide.ALL, pos.x, pos.y, pos.z)
     }
-    botFb.addMeshFromBuffers(botMeshBuilder)
+    fbBot.addMeshFromBuffers(botMeshBuilder)
 
-    val highlight: List<Coord> = listOf(Coord(3, 11, 21))
+    /* Highlighting */
+
+    val highlight: List<Coord> = listOf()
     val hiFb = FaceBuffer()
     highlight.forEach { pos ->
         addBlock(hiFb, matrix, ChunkBlockSide.ALL, pos.x, pos.y, pos.z)
@@ -92,7 +133,6 @@ fun io.github.lambdallama.State.floorModel(): Model {
     fb.addMeshFromBuffers(meshBuilder)
     return builder.end()
 }
-
 
 private class FaceBuffer {
     private val vertexBuffer: FloatArray = FloatArray(16 * 16 * 16 * 3 * 2 * 8 * 2 * 10)
@@ -140,14 +180,18 @@ private class FaceBuffer {
     }
 }
 
-private fun addBlock(faceBuilder: FaceBuffer, matrix: Matrix, sides: Int, x: Int, y: Int, z: Int) {
-    val halfSize = blockSize * .5f
-
+private fun addBlock(faceBuilder: FaceBuffer, matrix: Matrix, sides: Int,
+                     x: Int, y: Int, z: Int) {
     val position = Vector3(x.toFloat(), y.toFloat(), z.toFloat()).scl(blockSize)
 
     // offset so (0,0,0) is the center
     position.sub(matrix.R.toFloat() * blockSize * .5f)
 
+    addBlock(faceBuilder, sides, position, blockSize)
+}
+
+private fun addBlock(faceBuilder: FaceBuffer, sides: Int, position: Vector3, size: Float) {
+    val halfSize = size * .5f
     val normal = Vector3()
 
     if (sides and ChunkBlockSide.FRONT != 0) {
