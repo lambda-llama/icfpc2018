@@ -4,7 +4,7 @@ import java.io.DataInputStream
 import java.io.File
 import kotlin.coroutines.experimental.buildSequence
 
-class ReplayStrategy(val model: Model, val trace: File) : Strategy {
+class ReplayStrategy(val mode: Mode, val model: Model, val trace: File) : Strategy {
     private val commands = TraceReader(DataInputStream(trace.inputStream().buffered())).readAllCommands()
     override val name: String = "Replay (${trace.path})"
     override val state: State = State.forModel(model)

@@ -6,6 +6,7 @@ import java.util.HashSet
 import kotlin.coroutines.experimental.buildSequence
 
 class GroundedStrategy(
+    val mode: Mode,
     val model: Model,
     override val state: State = State.forModel(model)
 ) : Strategy {

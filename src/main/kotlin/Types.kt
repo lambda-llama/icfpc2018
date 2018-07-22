@@ -285,6 +285,12 @@ data class Matrix(
     }
 }
 
+enum class Mode {
+    Assembly,
+    Disassembly,
+    Reassembly,
+}
+
 data class Model(val matrix: Matrix) {
     companion object {
         fun parse(path: File): Model {

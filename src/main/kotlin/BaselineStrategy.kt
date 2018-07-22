@@ -168,6 +168,7 @@ fun sweep(
 }
 
 class Baseline(
+    private val mode: Mode,
     private val model: Model,
     override val state: State = State.forModel(model)
 ) : Strategy {

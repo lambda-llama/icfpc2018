@@ -3,7 +3,7 @@ package io.github.lambdallama
 import kotlin.coroutines.experimental.buildSequence
 import kotlin.math.*
 
-class SculptorStrategy(val model: Model) : Strategy {
+class SculptorStrategy(val mode: Mode, val model: Model) : Strategy {
     override val name: String = "sculptor"
     override val state: State = State.forModel(model)
 

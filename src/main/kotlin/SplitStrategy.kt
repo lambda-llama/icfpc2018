@@ -17,7 +17,7 @@ fun sMove1Fill(state: State, id: Int, target: Coord) = buildSequence {
     check(b.pos == target)
 }
 
-class SplitStrategy(val model: Model) : Strategy {
+class SplitStrategy(val mode: Mode, val model: Model) : Strategy {
     override val name: String = "Split"
     override val state: State = State.forModel(model)
 
@@ -43,7 +43,7 @@ class SplitStrategy(val model: Model) : Strategy {
         yieldAll(sweep(state, model, id1, minMidCoord, maxMidCoord))
 
         val leftState = state.narrow(minCoord, maxMidCoord - Delta(1, 0, 0))
-        yieldAll(GroundedStrategy(
+        yieldAll(GroundedStrategy(mode,
             model.copy(matrix = model.matrix.copy(
                 from = minCoord,
                 to = maxMidCoord - Delta(1, 0, 0))),

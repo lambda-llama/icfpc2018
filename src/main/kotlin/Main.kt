@@ -10,53 +10,76 @@ import java.util.concurrent.TimeUnit
 import java.util.*
 import kotlin.concurrent.thread
 
-fun getStrategy(args: List<String>, model: Model): Strategy {
+fun getStrategy(mode: Mode, model: Model, args: List<String>): Strategy {
     return when (args[0]) {
-        "baseline" -> Baseline(model)
-        "replay" -> ReplayStrategy(model, File(args[1]))
-        "layered" -> LayeredStrategy(model)
-        "grounded" -> GroundedStrategy(model)
-        "sculptor" -> SculptorStrategy(model)
-        "split" -> SplitStrategy(model)
+        "baseline" -> Baseline(mode, model)
+        "replay" -> ReplayStrategy(mode, model, File(args[1]))
+        "layered" -> LayeredStrategy(mode, model)
+        "grounded" -> GroundedStrategy(mode, model)
+        "sculptor" -> SculptorStrategy(mode, model)
+        "split" -> SplitStrategy(mode, model)
         else -> throw Exception("Invalid strategy name `${args[0]}`")
     }
 }
 
-fun main(args: Array<String>) {
-    var args = (System.getenv("ARGS") ?: "grounded").split(" ").toList()
-    when {
-        args[0] == "batch" -> {
-            val batchFilePath = args[1]
-            args = args.drop(2)
-            for (line in File(batchFilePath).readLines()) {
-                val parts = line.split(" ")
-                val modelFilePath = parts[0]
-                val traceFilePath = parts[1]
-                runNonInteractive(modelFilePath, traceFilePath, args)
-            }
-        }
-        args[0] == "console" -> {
-            val modelFilePath = args[1]
-            val traceFilePath = "out.nbt"
-            args = args.drop(2)
-            runNonInteractive(modelFilePath, traceFilePath, args)
-        }
-        else -> runInteractive("problemsF/FA043_tgt.mdl", "out.nbt", args)
+fun getMode(mode: String): Mode {
+    return when (mode) {
+        "a" -> Mode.Assembly
+        "d" -> Mode.Disassembly
+        "r" -> Mode.Reassembly
+        else -> throw Exception("Unknown mode")
     }
 }
 
-private fun createStrategy(modelFilePath: String, traceFilePath: String, args: List<String>): Strategy {
+fun main(args: Array<String>) {
+    val args = (System.getenv("ARGS") ?: "vis").split(" ").toList()
+    when (args[0]) {
+        "batch" -> {
+            val batchFilePath = args[1]
+            val strategyArgs = args.drop(2)
+            for (line in File(batchFilePath).readLines()) {
+                val parts = line.split(" ")
+                val mode = getMode(parts[0])
+                val modelFilePath = parts[1]
+                val traceFilePath = parts[2]
+                runNonInteractive(mode, modelFilePath, traceFilePath, strategyArgs)
+            }
+        }
+        "console" -> {
+            val mode = getMode(args[1])
+            val modelFilePath = args[2]
+            val traceFilePath = "out.nbt"
+            val strategyArgs = args.drop(3)
+            runNonInteractive(mode, modelFilePath, traceFilePath, strategyArgs)
+        }
+        "vis" -> {
+            val mode = if (args.count() > 1) getMode(args[1]) else Mode.Assembly
+            val modelFilePath = if (args.count() > 2) args[2] else "problemsF/FA043_tgt.mdl"
+            val traceFilePath = "out.nbt"
+            val strategyArgs = if (args.count() > 3) args.drop(3) else listOf("grounded")
+            runInteractive(mode, modelFilePath, traceFilePath, strategyArgs)
+        }
+        else -> throw Exception("Invalid execution mode")
+    }
+}
+
+private fun createStrategy(mode: Mode, modelFilePath: String, traceFilePath: String, args: List<String>): Strategy {
     val model = Model.parse(File(modelFilePath))
     val traceOutputStream = DataOutputStream(File(traceFilePath).outputStream().buffered())
-    val strategy = getStrategy(args, model)
+    val strategy = getStrategy(mode, model, args)
     strategy.state.addTraceListener(TraceWriter(traceOutputStream))
     return strategy
 }
 
-private fun runNonInteractive(modelFilePath: String, traceFilePath: String, args: List<String>) {
-    print("Solving ${modelFilePath}... ")
+private fun runNonInteractive(mode: Mode, modelFilePath: String, traceFilePath: String, args: List<String>) {
+    when (mode) {
+        Mode.Assembly -> print("Assembling ")
+        Mode.Disassembly -> print("Disassembling ")
+        Mode.Reassembly -> print("Reassembling ")
+    }
+    print("${modelFilePath}... ")
     try {
-        val strategy = createStrategy(modelFilePath, traceFilePath, args)
+        val strategy = createStrategy(mode, modelFilePath, traceFilePath, args)
         val sw: Stopwatch = Stopwatch.createStarted()
         for (state in strategy.run()) {
             // do nothing
@@ -69,8 +92,8 @@ private fun runNonInteractive(modelFilePath: String, traceFilePath: String, args
     }
 }
 
-private fun runInteractive(modelFilePath: String, traceFilePath: String, args: List<String>) {
-    val strategy = createStrategy(modelFilePath, traceFilePath, args)
+private fun runInteractive(mode: Mode, modelFilePath: String, traceFilePath: String, args: List<String>) {
+    val strategy = createStrategy(mode, modelFilePath, traceFilePath, args)
     val currentState = CurrentState(strategy.state)
     val engine = VoxelEngine(strategy.name, currentState)
     strategy.state.addTraceListener(currentState)

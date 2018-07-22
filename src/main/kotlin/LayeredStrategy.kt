@@ -4,6 +4,7 @@ import java.util.*
 import kotlin.coroutines.experimental.buildSequence
 
 class LayeredStrategy(
+    val mode: Mode,
     val model: Model,
     override val state: State = State.forModel(model)
 ) : Strategy {
