@@ -7,7 +7,7 @@ class SculptorStrategy(val mode: Mode, val model: Model?, source: Model?) : Stra
     override val name: String = "sculptor"
     override val state: State = State.create(mode, model?.matrix, source?.matrix)
 
-//    private val cBeams = model?.matrix?.let { criticalBeams(it) }.orEmpty()
+    private var forbiddenCoords: Set<Coord> = emptySet()
     private val cBeams = emptyList<Beam>()
 
     override fun run(): Sequence<State> {
@@ -61,7 +61,7 @@ class SculptorStrategy(val mode: Mode, val model: Model?, source: Model?) : Stra
         }
 
         /* Step 2 - sculpt the box, leaving the correctly filled targetMatrix */
-
+        forbiddenCoords = getForbiddenCoordinates(state.targetMatrix)
         yieldAll(comb.lateralMove(comb.size - maxCombSize, Delta(xDirection, 1, 0)))
         yieldAll(comb.resize(maxCombSize))
 
@@ -108,6 +108,7 @@ class SculptorStrategy(val mode: Mode, val model: Model?, source: Model?) : Stra
     }
 
     private fun runReassembly(): Sequence<State> = buildSequence {
+        forbiddenCoords = getForbiddenCoordinates(state.matrix)
         yield(state)
 
         /* Step 0 - fork bots */
@@ -136,6 +137,7 @@ class SculptorStrategy(val mode: Mode, val model: Model?, source: Model?) : Stra
 //                    }
                     comb.bots.forEach { b -> state.fill(b.id, Delta(-xDirection, 0, 0)) }
                     state.step()
+                    yieldAll(comb.switchToLowIfNeeded())
                 }
                 xDirection *= -1
                 yieldAll(comb.normalMove(0, 1))
@@ -154,7 +156,7 @@ class SculptorStrategy(val mode: Mode, val model: Model?, source: Model?) : Stra
         }
 
         /* Step 2 - sculpt the box, leaving the correctly filled targetMatrix */
-
+        forbiddenCoords = getForbiddenCoordinates(state.targetMatrix)
         yieldAll(comb.lateralMove(comb.size - maxCombSize, Delta(xDirection, 1, 0)))
         yieldAll(comb.resize(maxCombSize))
 
@@ -318,19 +320,28 @@ class SculptorStrategy(val mode: Mode, val model: Model?, source: Model?) : Stra
             yield(state)
         }
 
-        fun moveSculpt(delta: Delta): Sequence<State> = buildSequence {
-            fun flipHarmonics() {
-                state.flip(bots[0].id)
-                bots.drop(1).forEach { state.wait(it.id) }
-                state.step()
-            }
+        private fun flipHarmonics() {
+            state.flip(bots[0].id)
+            bots.drop(1).forEach { state.wait(it.id) }
+            state.step()
+        }
 
-            val newPos = bots[0].pos + delta
-            if (cBeams.contains(Beam(newPos.x, newPos.y))) {
+        private fun switchToHighIfNeeded(willBeVoided: List<Coord>) = buildSequence {
+            if (state.harmonics == Harmonics.Low && willBeVoided.any { it in forbiddenCoords  }) {
                 flipHarmonics()
                 yield(state)
             }
+        }
 
+        fun switchToLowIfNeeded() = buildSequence {
+            if (state.harmonics == Harmonics.High && forbiddenCoords.all { state.matrix[it] }) {
+                flipHarmonics()
+                yield(state)
+            }
+        }
+
+        fun moveSculpt(delta: Delta): Sequence<State> = buildSequence {
+            yieldAll(switchToHighIfNeeded(bots.map { it.pos + delta }))
             bots.forEach { b -> state.void(b.id, delta) }
             state.step()
             yield(state)
@@ -343,11 +354,7 @@ class SculptorStrategy(val mode: Mode, val model: Model?, source: Model?) : Stra
                 bots.forEach { b -> if (state.targetMatrix[b.pos - delta]) state.fill(b.id, -delta) else state.wait(b.id) }
                 state.step()
                 yield(state)
-                val oldPos = bots[0].pos - delta
-                if (cBeams.contains(Beam(oldPos.x, oldPos.y))) {
-                    flipHarmonics()
-                    yield(state)
-                }
+                yieldAll(switchToLowIfNeeded())
             }
         }
 
@@ -387,6 +394,7 @@ class SculptorStrategy(val mode: Mode, val model: Model?, source: Model?) : Stra
         fun erasingMove(delta: Delta): Sequence<State> = buildSequence {
             require(delta.mlen == 1)
             if (bots.any { b -> state.matrix[b.pos + delta] }) {
+                yieldAll(switchToHighIfNeeded(bots.map { it.pos + delta }))
                 bots.forEach { b -> if (state.matrix[b.pos + delta]) state.void(b.id, delta) else state.wait(b.id) }
                 state.step()
                 yield(state)
@@ -460,7 +468,7 @@ class SculptorStrategy(val mode: Mode, val model: Model?, source: Model?) : Stra
 
 data class Beam(val x: Int, val y: Int) {
     fun contains(c: Coord): Boolean =
-            c.x == x && c.y == y
+            (c.x == x || c.x == x - 1 || c.x == x + 1) && c.y == y
 }
 
 enum class WalkState {
@@ -470,15 +478,14 @@ enum class WalkState {
 
 }
 
-val DeltasDown = arrayOf(
-        Delta(0, -1, 0),
-        Delta(0, 0, 1),
-        Delta(0, 0, -1),
-        Delta(1, 0, 0),
-        Delta(-1, 0, 0),
-        Delta(0, 1, 0)
-)
-
+fun getForbiddenCoordinates(m: Matrix): Set<Coord> {
+    return criticalBeams(m).flatMap { beam ->
+        (1..m.R).map { z ->
+            Coord(beam.x, beam.y, z)
+        }
+    }.filter { it.isInBounds(m) && m[it] }
+            .toSet()
+}
 
 /**
  * Compute the beams cutting through which risks making some voxels ungrounded
@@ -501,7 +508,7 @@ fun criticalBeams(m: Matrix): Set<Beam> {
                     return true
                 }
                 Matrix.DXDYDZ_MLEN1
-                        .map {c + it}
+                        .map { c + it }
                         .filter { it !in work && it !in done }
                         .forEach { work.add(it) }
             }
