@@ -17,7 +17,9 @@ fun getStrategy(mode: Mode, target: Model?, source: Model?, args: List<String>):
         "replay" -> ReplayStrategy(mode, target!!, source, File(args[1]))
         "layered" -> LayeredStrategy(mode, target!!, source)
         "grounded" -> GroundedStrategy(mode, target!!, source)
-        "sculptor" -> SculptorStrategy(mode, target, source)
+        "sculptor" -> {
+            SculptorStrategy(Mode.Reassembly, Model(Matrix.zerosLike(source!!.matrix)), source)
+        }
         "split" -> SplitStrategy(mode, target!!, source)
         else -> throw Exception("Invalid strategy name `${args[0]}`")
     }

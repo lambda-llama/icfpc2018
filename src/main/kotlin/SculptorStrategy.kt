@@ -8,7 +8,6 @@ class SculptorStrategy(val mode: Mode, val model: Model?, source: Model?) : Stra
     override val state: State = State.create(mode, model?.matrix, source?.matrix)
 
     private var forbiddenCoords: Set<Coord> = emptySet()
-    private val cBeams = emptyList<Beam>()
 
     override fun run(): Sequence<State> {
         return when (mode) {
@@ -113,10 +112,11 @@ class SculptorStrategy(val mode: Mode, val model: Model?, source: Model?) : Stra
 
         /* Step 0 - fork bots */
 
-        val (minCoord, maxCoord) = bbUnion(
+        val tbb = state.targetMatrix.bbox()
+        val (minCoord, maxCoord) = if (tbb.first != Coord(0, 0, 0)) bbUnion(
                 state.matrix.bbox(),
-                state.targetMatrix.bbox()
-        )
+                tbb
+        ) else state.matrix.bbox()
         val maxCombSize = min(40, maxCoord.z - minCoord.z + 1)
 
         val comb = Comb()
