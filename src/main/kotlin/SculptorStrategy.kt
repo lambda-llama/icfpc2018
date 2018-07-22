@@ -7,148 +7,130 @@ class SculptorStrategy(val model: Model) : Strategy {
     override val name: String = "sculptor"
     override val state: State = State.forModel(model)
 
+    inner class Comb {
+        val bots: ArrayList<BotView>
+        private val bot1: BotView = state[1]!!
+
+        init {
+            bots = ArrayList(listOf(bot1))
+        }
+
+        val size: Int get() = bots.count()
+
+        fun resize(newSize: Int): Sequence<State> = buildSequence {
+            while (size < newSize) {
+                bots.dropLast(1).forEach { b -> state.wait(b.id) }
+                val id = state.fission(bots.last().id, Delta(0, 0, 1), bots.last().seeds().count() - 1)
+                bots.add(state[id]!!)
+                state.step()
+                yield(state)
+            }
+            while (size > newSize) {
+                bots.dropLast(2).forEach { b -> state.wait(b.id) }
+                state.fusion(bots.dropLast(1).last().id, bots.last().id)
+                bots.removeAt(size - 1)
+                state.step()
+                yield(state)
+
+                // if we are still in the model, we should fill it on resize
+                val pos = bots.last().pos + Delta(0, 0, 1)
+                if (model.matrix[pos] && !state.matrix[pos]) {
+                    bots.dropLast(1).forEach { b -> state.wait(b.id) }
+                    state.fill(bots.last().id, Delta(0, 0, 1))
+                    state.step()
+                    yield(state)
+                }
+            }
+        }
+    }
+
     override fun run(): Sequence<State> = buildSequence {
         yield(state)
 
         /* Step 0 - fork bots */
 
-        var bot1 = state[1]!!
-        var bot2 = state[state.fission(bot1.id, Delta(1, 0, 1), bot1.seeds().count() / 2)]!!
-        state.step()
-        yield(state)
-
-        state.sMove(bot1.id, Delta(1, 0, 0))
-        state.sMove(bot2.id, Delta(0, 0, 1))
-        state.step()
-        yield(state)
-
-        var bot3 = state[state.fission(bot1.id, Delta(1, 0, 1), bot1.seeds().count() / 2)]!!
-        var bot4 = state[state.fission(bot2.id, Delta(1, 0, 1), bot2.seeds().count() / 2)]!!
-        state.step()
-        yield(state)
-
-        state.sMove(bot1.id, Delta(1, 0, 0))
-        state.lMove(bot2.id, Delta(0, 0, 4), Delta(1, 0, 0))
-        state.sMove(bot3.id, Delta(0, 0, 1))
-        state.sMove(bot4.id, Delta(0, 0, 1))
-        state.step()
-        yield(state)
-
-        var bot5 = state[state.fission(bot1.id, Delta(1, 0, 1), bot1.seeds().count() / 2)]!!
-        var bot6 = state[state.fission(bot2.id, Delta(1, 0, 1), bot2.seeds().count() / 2)]!!
-        var bot7 = state[state.fission(bot3.id, Delta(1, 0, 1), bot3.seeds().count() / 2)]!!
-        var bot8 = state[state.fission(bot4.id, Delta(1, 0, 1), bot4.seeds().count() / 2)]!!
-        state.step()
-        yield(state)
-
-        state.sMove(bot1.id, Delta(1, 0, 0))
-        state.sMove(bot2.id, Delta(1, 0, 0))
-        state.sMove(bot3.id, Delta(1, 0, 0))
-        state.sMove(bot4.id, Delta(1, 0, 0))
-        state.wait(bot5.id)
-        state.wait(bot6.id)
-        state.wait(bot7.id)
-        state.wait(bot8.id)
-        state.step()
-        yield(state)
-
-        val bots = listOf(bot1, bot2, bot3, bot4, bot5, bot6, bot7, bot8)
-                .sortedBy { b -> b.pos.z }
-        bot1 = bots[0]
-        bot2 = bots[1]
-        bot3 = bots[2]
-        bot4 = bots[3]
-        bot5 = bots[4]
-        bot6 = bots[5]
-        bot7 = bots[6]
-        bot8 = bots[7]
+        val comb = Comb()
+        yieldAll(comb.resize(16))
 
         /* Step 1 - fill the bounding box */
 
         val (minCoord, maxCoord) = model.matrix.bbox()
-        yieldAll(moveTo(bots, minCoord))
+        yieldAll(moveTo(comb.bots, minCoord))
 
         var xDirection = 1
-        for (z in minCoord.z..maxCoord.z step bots.count()) {
+        for (z in minCoord.z..maxCoord.z step comb.size) {
             for (y in minCoord.y..maxCoord.y) {
-                yieldAll(normalMove(bots, 0, 1))
+                yieldAll(normalMove(comb.bots, 0, 1))
                 for (x in minCoord.x..maxCoord.x) {
-                    bots.forEach { b -> state.fill(b.id, Delta(0, -1, 0)) }
+                    comb.bots.forEach { b -> state.fill(b.id, Delta(0, -1, 0)) }
                     state.step()
                     yield(state)
                     if (x != maxCoord.x) {
-                        yieldAll(normalMove(bots, xDirection, 0))
+                        yieldAll(normalMove(comb.bots, xDirection, 0))
                     }
                 }
                 xDirection *= -1
             }
 
-            if (z < maxCoord.z - bots.count()) {
-                yieldAll(lateralMove(bots, bots.count(), Delta(xDirection, 1, 0)))
-                yieldAll(normalMove(bots, 0, minCoord.y - maxCoord.y - 1))
+            if (z + comb.size <= maxCoord.z) {
+                val shift = comb.size
+                if (comb.bots.last().pos.z + comb.size >= state.matrix.R) {
+                    yieldAll(comb.resize(state.matrix.R - comb.bots.last().pos.z - 1))
+                }
+                yieldAll(lateralMove(comb.bots, shift, Delta(xDirection, 1, 0)))
+                yieldAll(normalMove(comb.bots, 0, minCoord.y - maxCoord.y - 1))
             }
         }
 
         /* Step 2 - sculpt the box, leaving the correctly filled model */
 
-        for (z in minCoord.z..maxCoord.z step bots.count()) {
+        yieldAll(lateralMove(comb.bots, comb.size - 16, Delta(xDirection, 1, 0)))
+        yieldAll(comb.resize(16))
+
+        val n = (maxCoord.z - minCoord.z + 1) / comb.size
+        for (iz in 0..n) {
             for (y in minCoord.y..maxCoord.y) {
-                yieldAll(moveSculpt(bots, Delta(0, -1, 0)))
+                yieldAll(moveSculpt(comb.bots, Delta(0, -1, 0)))
                 for (x in minCoord.x..maxCoord.x) {
-                    yieldAll(moveSculpt(bots, Delta(xDirection, 0, 0)))
+                    yieldAll(moveSculpt(comb.bots, Delta(xDirection, 0, 0)))
                 }
                 xDirection *= -1
             }
-            // TODO: remove this hack
-            if (true) {
+
+            if (iz != n) {
+                // TODO: remove this hack?
                 for (y in 1..maxCoord.y - minCoord.y + 1) {
-                    yieldAll(moveSculpt(bots, Delta(0, 1, 0)))
+                    yieldAll(moveSculpt(comb.bots, Delta(0, 1, 0)))
                 }
-                val shift = if (bots[0].pos.z - bots.count() < 0) -bots[0].pos.z else -bots.count()
-                yieldAll(moveTo(bots,
-                        bots[0].pos + Delta(0, 0, shift),
-                        Delta(xDirection, 1, 0)))
-            } else {
-                yieldAll(moveTo(bots,
-                        bots[0].pos + Delta(0, maxCoord.y - minCoord.y + 1, -bots.count()),
+                val shift = if (comb.bots[0].pos.z - comb.size < 0) -comb.bots[0].pos.z else -comb.size
+                yieldAll(moveTo(comb.bots,
+                        comb.bots[0].pos + Delta(0, 0, shift),
                         Delta(xDirection, 1, 0)))
             }
         }
 
         /* Step 3 - tear down */
 
-        state.fusion(bot1.id, bot2.id)
-        state.fusion(bot3.id, bot4.id)
-        state.fusion(bot5.id, bot6.id)
-        state.fusion(bot7.id, bot8.id)
-        state.step()
-        yield(state)
+        yieldAll(comb.resize(1))
 
-        state.lMove(bot1.id, Delta(xDirection, 0, 0), Delta(0, 0, 2))
-        state.wait(bot3.id)
-        state.sMove(bot5.id, Delta(0, 0, -1))
-        state.lMove(bot7.id, Delta(xDirection, 0, 0), Delta(0, 0, -3))
-        state.step()
-        yield(state)
+        if (comb.bots[0].pos.z > 0) {
+            yieldAll(normalZMove(comb.bots, -1))
+            val oldPos = comb.bots[0].pos + Delta(0, 0, 1)
+            if (model.matrix[oldPos] && !state.matrix[oldPos]) {
+                state.fill(comb.bots[0].id, Delta(0, 0, 1))
+                state.step()
+                yield(state)
+            }
+        }
 
-        state.fusion(bot1.id, bot3.id)
-        state.fusion(bot7.id, bot5.id)
-        state.step()
-        yield(state)
+        val delta = Coord.ZERO - comb.bots[0].pos
 
-        state.fusion(bot1.id, bot7.id)
-        state.step()
-        yield(state)
-
-        val lastBot = listOf(bot1)
-        val delta = Coord.ZERO - bot1.pos
-
-        yieldAll(normalMove(lastBot, delta.dx, delta.dy))
-        yieldAll(normalZMove(lastBot, delta.dz))
+        yieldAll(normalMove(comb.bots, delta.dx, delta.dy))
+        yieldAll(normalZMove(comb.bots, delta.dz))
 
         check(state.matrix == model.matrix)
 
-        state.halt(bot1.id)
+        state.halt(comb.bots[0].id)
         state.step()
         yield(state)
     }
@@ -213,7 +195,7 @@ class SculptorStrategy(val model: Model) : Strategy {
         }
 
         val n = sqrt(bots.count().toDouble()).toInt()
-        val ny = min( n, state.matrix.R - bots[0].pos.y - 1)
+        val ny = 0 // min( n, state.matrix.R - bots[0].pos.y - 1)
         val nx = if (ny == 0) bots.count() else (bots.count() + ny - 1) / ny
         val blowOutDeltas = ArrayList<Pair<Delta, Delta>>()
         for (x in 0..nx) {
