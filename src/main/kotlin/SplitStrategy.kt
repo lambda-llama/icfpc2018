@@ -17,9 +17,9 @@ fun sMove1Fill(state: State, id: Int, target: Coord) = buildSequence {
     check(b.pos == target)
 }
 
-class SplitStrategy(val mode: Mode, val model: Model) : Strategy {
+class SplitStrategy(val mode: Mode, val model: Model, val source: Model?) : Strategy {
     override val name: String = "Split"
-    override val state: State = State.forModel(model)
+    override val state: State = State.create(mode, model.matrix, source?.matrix)
 
     override fun run(): Sequence<State> = buildSequence {
         val (minCoord, maxCoord) = model.matrix.bbox()
@@ -47,6 +47,7 @@ class SplitStrategy(val mode: Mode, val model: Model) : Strategy {
             model.copy(matrix = model.matrix.copy(
                 from = minCoord,
                 to = maxMidCoord - Delta(1, 0, 0))),
+            source,
             leftState).run())
 
 //        state.fission(id1, Delta(1, 0, 0), id2)

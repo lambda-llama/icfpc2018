@@ -3,9 +3,9 @@ package io.github.lambdallama
 import kotlin.coroutines.experimental.buildSequence
 import kotlin.math.*
 
-class SculptorStrategy(val mode: Mode, val model: Model) : Strategy {
+class SculptorStrategy(val mode: Mode, val model: Model, source: Model?) : Strategy {
     override val name: String = "sculptor"
-    override val state: State = State.forModel(model)
+    override val state: State = State.create(mode, model.matrix, source?.matrix)
 
     override fun run(): Sequence<State> = buildSequence {
         yield(state)
@@ -49,7 +49,7 @@ class SculptorStrategy(val mode: Mode, val model: Model) : Strategy {
             }
         }
 
-        /* Step 2 - sculpt the box, leaving the correctly filled model */
+        /* Step 2 - sculpt the box, leaving the correctly filled targetMatrix */
 
         yieldAll(comb.lateralMove(comb.size - maxCombSize, Delta(xDirection, 1, 0)))
         yieldAll(comb.resize(maxCombSize))
@@ -116,7 +116,7 @@ class SculptorStrategy(val mode: Mode, val model: Model) : Strategy {
                 state.step()
                 yield(state)
 
-                // if we are still in the model, we should fill it on resize
+                // if we are still in the targetMatrix, we should fill it on resize
                 val pos = bots.last().pos + Delta(0, 0, 1)
                 if (model.matrix[pos] && !state.matrix[pos]) {
                     bots.dropLast(1).forEach { b -> state.wait(b.id) }

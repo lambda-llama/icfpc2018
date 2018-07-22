@@ -1,16 +1,15 @@
 package io.github.lambdallama
 
 import java.util.*
-import kotlin.collections.HashSet
 
 class State(
-    val model: Model,
-    val matrix: Matrix,
-    val bots: Array<Bot?>,
+        val targetMatrix: Matrix,
+        val matrix: Matrix,
+        val bots: Array<Bot?>,
 //    private val volatile: Matrix = Matrix.zerosLike(matrix),
-    harmonics: Harmonics = Harmonics.Low,
-    energy: Long = 0,
-    private var expectedBotActionsThisStep: Int = bots.count { it != null }
+        harmonics: Harmonics = Harmonics.Low,
+        energy: Long = 0,
+        private var expectedBotActionsThisStep: Int = bots.count { it != null }
 ) {
     private val traceListeners: ArrayList<TraceListener> = ArrayList()
 
@@ -25,7 +24,7 @@ class State(
     /* General public methods */
 
     fun split() = State(
-        model,
+        targetMatrix,
         matrix.copy(coordinates = matrix.coordinates.clone()),
         Array(bots.size) { bots[it]?.copy() },
         harmonics,
@@ -33,7 +32,7 @@ class State(
         expectedBotActionsThisStep)
 
     fun shallowSplit() = State(
-        model,
+        targetMatrix,
         matrix,
         Array(bots.size) { bots[it]?.copy() },
         harmonics,
@@ -41,7 +40,7 @@ class State(
         expectedBotActionsThisStep)
 
     fun narrow(from: Coord, to: Coord) = State(
-        model,
+        targetMatrix,
         matrix.copy(from = from, to = to),
         bots,
         harmonics,
@@ -266,12 +265,15 @@ class State(
     }
 
     companion object {
-        fun forModel(model: Model): State {
-            // TODO: use the model matrix?
+        fun create(mode: Mode, targetModel: Matrix?, sourceMatrix: Matrix?): State {
             val botsCount = 40
             val bots = Array<Bot?>(botsCount + 1) { null }
             bots[1] = Bot(1, Coord.ZERO, (2..botsCount).toSortedSet())
-            return State(model, Matrix.zerosLike(model.matrix), bots)
+            return when (mode) {
+                Mode.Assembly -> State(targetModel!!, Matrix.zerosLike(targetModel), bots)
+                Mode.Disassembly -> State(Matrix.zerosLike(sourceMatrix!!), sourceMatrix, bots)
+                Mode.Reassembly -> State(targetModel!!, sourceMatrix!!, bots)
+            }
         }
     }
 }

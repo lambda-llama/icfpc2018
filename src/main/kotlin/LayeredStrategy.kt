@@ -6,7 +6,8 @@ import kotlin.coroutines.experimental.buildSequence
 class LayeredStrategy(
     val mode: Mode,
     val model: Model,
-    override val state: State = State.forModel(model)
+    source: Model?,
+    override val state: State = State.create(mode, model.matrix, source?.matrix)
 ) : Strategy {
     override val name: String = "Layered"
 

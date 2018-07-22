@@ -170,7 +170,8 @@ fun sweep(
 class Baseline(
     private val mode: Mode,
     private val model: Model,
-    override val state: State = State.forModel(model)
+    source: Model?,
+    override val state: State = State.create(mode, model.matrix, source?.matrix)
 ) : Strategy {
     override val name: String = "Baseline"
 
@@ -185,7 +186,7 @@ class Baseline(
         yieldAll(multiSLMove(state, id, minCoord + initialDelta))
 
         sweep(state, model, id, minCoord, maxCoord)
-        //check(state.matrix == model.matrix)
+        //check(state.matrix == targetMatrix.matrix)
 
         yieldAll(multiSLMove(state, id, Coord.ZERO))
         state.halt(id)

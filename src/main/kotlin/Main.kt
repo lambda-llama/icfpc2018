@@ -10,14 +10,14 @@ import java.util.concurrent.TimeUnit
 import java.util.*
 import kotlin.concurrent.thread
 
-fun getStrategy(mode: Mode, model: Model, args: List<String>): Strategy {
+fun getStrategy(mode: Mode, target: Model?, source: Model?, args: List<String>): Strategy {
     return when (args[0]) {
-        "baseline" -> Baseline(mode, model)
-        "replay" -> ReplayStrategy(mode, model, File(args[1]))
-        "layered" -> LayeredStrategy(mode, model)
-        "grounded" -> GroundedStrategy(mode, model)
-        "sculptor" -> SculptorStrategy(mode, model)
-        "split" -> SplitStrategy(mode, model)
+        "baseline" -> Baseline(mode, target!!, source)
+        "replay" -> ReplayStrategy(mode, target!!, source, File(args[1]))
+        "layered" -> LayeredStrategy(mode, target!!, source)
+        "grounded" -> GroundedStrategy(mode, target!!, source)
+        "sculptor" -> SculptorStrategy(mode, target!!, source)
+        "split" -> SplitStrategy(mode, target!!, source)
         else -> throw Exception("Invalid strategy name `${args[0]}`")
     }
 }
@@ -66,7 +66,11 @@ fun main(args: Array<String>) {
 private fun createStrategy(mode: Mode, modelFilePath: String, traceFilePath: String, args: List<String>): Strategy {
     val model = Model.parse(File(modelFilePath))
     val traceOutputStream = DataOutputStream(File(traceFilePath).outputStream().buffered())
-    val strategy = getStrategy(mode, model, args)
+    val strategy = when (mode) {
+        Mode.Assembly -> getStrategy(mode, model, null, args)
+        Mode.Disassembly -> getStrategy(mode, null, model, args)
+        Mode.Reassembly -> TODO()
+    }
     strategy.state.addTraceListener(TraceWriter(traceOutputStream))
     return strategy
 }

@@ -33,7 +33,7 @@ fun io.github.lambdallama.State.toVisModel(): Model {
     )
 
     val fbBounds = FaceBuffer()
-    addBlock(fbBounds, ChunkBlockSide.ALL, Vector3(), model.matrix.R * blockSize)
+    addBlock(fbBounds, ChunkBlockSide.ALL, Vector3(), targetMatrix.R * blockSize)
     fbBounds.addMeshFromBuffers(boundsMeshBuilder)
 
     /* Wireframe target */
@@ -48,9 +48,9 @@ fun io.github.lambdallama.State.toVisModel(): Model {
     )
 
     val fbTarget = FaceBuffer()
-    model.matrix.forEach { x, y, z ->
-        if (model.matrix[x, y, z] && !matrix[x, y, z]) {
-            addBlock(fbTarget, matrix, model.matrix.blockSides(x, y, z), x, y, z)
+    targetMatrix.forEach { x, y, z ->
+        if (targetMatrix[x, y, z] && !matrix[x, y, z]) {
+            addBlock(fbTarget, matrix, targetMatrix.blockSides(x, y, z), x, y, z)
         }
     }
     fbTarget.addMeshFromBuffers(targetMeshBuilder)
