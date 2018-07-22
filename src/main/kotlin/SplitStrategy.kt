@@ -39,23 +39,41 @@ class SplitStrategy(val mode: Mode, val model: Model, val source: Model?) : Stra
 
         val id1 = 1
         val id2 = 2
+
         yieldAll(multiSLMove(state, id1, minMidCoord + initialDelta))
         yieldAll(sweep(state, model, id1, minMidCoord, maxMidCoord))
 
-        val leftState = state.narrow(minCoord, maxMidCoord - Delta(1, 0, 0))
-        yieldAll(GroundedStrategy(mode,
-            model.copy(matrix = model.matrix.copy(
-                from = minCoord,
-                to = maxMidCoord - Delta(1, 0, 0))),
-            source,
-            leftState).run())
+        state.fission(id1, Delta(0, 0, 1), state[id1]!!.seeds().count() - 1)
+        state.step()
+        yield(state)
 
-//        state.fission(id1, Delta(1, 0, 0), id2)
-//        state.step()
-//        yield(state)
-//        state.sMove(id1, Delta(-1, 0, 0))
-//        state.wait(id2)
-//        state.step()
-//        yield(state)
+        val its = mapOf(
+            id1 to GroundedStrategy(mode, model, source, state)
+                .fillAll(state[id1]!!, minCoord, maxMidCoord - Delta(1, 0, 0)).iterator(),
+            id2 to GroundedStrategy(mode, model, source, state)
+                .fillAll(state[id2]!!, minMidCoord + Delta(1, 0, 0), maxCoord).iterator())
+
+        while (its.values.any { it.hasNext() }) {
+            for ((id, it) in its) {
+                if (it.hasNext()) {
+                    it.next()
+                } else {
+                    state.wait(id)
+                }
+            }
+
+            state.step()
+            yield(state)
+        }
+
+        for (command in multiSLFind(state.narrow(id1), id1, state[id2]!!.pos - Delta(1, 0, 0))) {
+            command(state, id1)
+            state.wait(id2)
+            state.step()
+            yield(state)
+        }
+        state.fusion(id1, id2)
+        state.step()
+        yield(state)
     }
 }

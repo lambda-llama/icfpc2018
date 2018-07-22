@@ -23,39 +23,10 @@ class GroundedStrategy(
     override fun run(): Sequence<State> = buildSequence {
         yield(state)
 
-        val grounded = HashSet<Coord>()
-        model.matrix.apply {
-            for (x in from.x..to.x) {
-                for (z in from.z..to.z) {
-                    val coord = Coord(x, 0, z)
-                    if (this[coord]) grounded.add(coord)
-                }
-            }
-        }
-
         val bot = state[1]!!
-
-        while (grounded.isNotEmpty()) {
-            val (toFill, fillFrom) = grounded.mapNotNull { toFill -> fillableFrom(toFill)?.let { toFill to it } }
-                    .sortedWith(compareBy({ it.first.y }, { -it.second.y }, { (it.second - bot.pos).mlen }))
-                    .firstOrNull() ?: error("unfillable grounded cell")
-
-            grounded.remove(toFill)
-            yieldAll(multiSLMove(state, bot.id, fillFrom))
-            state.fill(bot.id, toFill - bot.pos)
+        for (ignore in fillAll(bot)) {
             state.step()
             yield(state)
-
-            for (dxdydz in DXDYDZ_MLEN1) {
-                check(dxdydz.mlen == 1)
-                check(model.matrix[toFill])
-                val testCoord = toFill + dxdydz
-                if (testCoord.isInBounds(model.matrix) &&
-                        model.matrix[testCoord] &&
-                        !state.matrix[testCoord]) {
-                    grounded.add(testCoord)
-                }
-            }
         }
 
         check(state.matrix == model.matrix)
@@ -64,5 +35,47 @@ class GroundedStrategy(
         state.halt(bot.id)
         state.step()
         yield(state)
+    }
+
+    fun fillAll(
+        bot: BotView,
+        from: Coord = model.matrix.from,
+        to: Coord = model.matrix.to
+    ): Sequence<State> = buildSequence {
+        val grounded = HashSet<Coord>()
+        for (x in from.x..to.x) {
+            for (z in from.z..to.z) {
+                val coord = Coord(x, 0, z)
+                if (model.matrix[coord]) grounded.add(coord)
+            }
+        }
+
+        while (grounded.isNotEmpty()) {
+            val (toFill, fillFrom) = grounded.mapNotNull { toFill -> fillableFrom(toFill)?.let { toFill to it } }
+                .sortedWith(compareBy({ it.first.y }, { -it.second.y }, { (it.second - bot.pos).mlen }))
+                .firstOrNull() ?: error("unfillable grounded cell")
+
+            grounded.remove(toFill)
+
+            for (command in multiSLFind(state.narrow(bot.id), bot.id, fillFrom)) {
+                command(state, bot.id)
+                yield(state)
+            }
+
+            state.fill(bot.id, toFill - bot.pos)
+            yield(state)
+
+            for (dxdydz in DXDYDZ_MLEN1) {
+                check(dxdydz.mlen == 1)
+                check(model.matrix[toFill])
+                val testCoord = toFill + dxdydz
+                if (testCoord.isInBounds(model.matrix) &&
+                    testCoord in from..to &&
+                    model.matrix[testCoord] &&
+                    !state.matrix[testCoord]) {
+                    grounded.add(testCoord)
+                }
+            }
+        }
     }
 }

@@ -39,13 +39,13 @@ class State(
         energy,
         expectedBotActionsThisStep)
 
-    fun narrow(from: Coord, to: Coord) = State(
+    fun narrow(id: Int) = State(
         targetMatrix,
-        matrix.copy(from = from, to = to),
-        bots,
+        matrix,
+        Array(bots.size) { if (it == id) bots[it] else null },
         harmonics,
         energy,
-        expectedBotActionsThisStep)
+        expectedBotActionsThisStep = 1)
 
     fun addTraceListener(traceListener: TraceListener) {
         traceListeners.add(traceListener)
