@@ -111,19 +111,6 @@ data class Matrix(
         return true
     }
 
-    /** All coords reachable from a given one via Void and 2-step SMove. */
-    fun voidS2FillNeighborhood(coord: Coord): Sequence<Pair<Array<Command>, Coord>> {
-        return DXDYDZ_MLEN1.asSequence().mapNotNull { delta ->
-            val n1 = coord + delta
-            val n2 = n1 + delta
-            if (n2.isInBounds(this) && this[n1] && isVoidRegion(n1, n2)) {
-                arrayOf(Void(delta), SMove(delta * 2), Fill(-delta)) to n2
-            } else {
-                null
-            }
-        }
-    }
-
     /** All coords reachable from a given one via SMove. */
     fun sNeighborhood(coord: Coord): Sequence<Pair<SMove, Coord>> = buildSequence {
         for (dir in DXDYDZ_MLEN1) {

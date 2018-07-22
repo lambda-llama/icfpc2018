@@ -83,22 +83,6 @@ fun multiSLFind(initial: State, id: Int, target: Coord): Sequence<Command> {
                 }
             }
         }
-
-        for ((gtd, n) in state.matrix.voidS2FillNeighborhood(b.pos)) {
-            if (!next[b.pos]) {
-                val split = state.shallowSplit()
-                for (command in gtd) {
-                    command(split, id)
-                    split.step()
-                }
-                val h = split.heuristic(b.id, target)
-                if (h < heuristic[n]) {
-                    q.add(split to gtd.fold(commands) { ptr, command -> ptr.cons(command) })
-                    heuristic.put(n, h)
-                    next[n] = true
-                }
-            }
-        }
     }
 
     if (found == null) {
