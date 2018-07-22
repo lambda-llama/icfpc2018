@@ -1,6 +1,7 @@
 package io.github.lambdallama
 
 import java.util.*
+import kotlin.collections.HashSet
 
 class State(
     val model: Model,
@@ -222,6 +223,8 @@ class State(
 
     fun step() {
         check(botCommands.count() == expectedBotActionsThisStep)
+        // VERY EXPENSIVE CHECK
+        // check(matrix.isGrounded())
 
 //        volatile.clear()
 

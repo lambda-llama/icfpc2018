@@ -69,9 +69,7 @@ class SculptorStrategy(val model: Model) : Strategy {
                     yieldAll(comb.moveSculpt(Delta(0, 1, 0)))
                 }
                 val shift = if (comb.bots[0].pos.z - comb.size < 0) -comb.bots[0].pos.z else -comb.size
-                yieldAll(comb.moveTo(
-                        comb.bots[0].pos + Delta(0, 0, shift),
-                        Delta(xDirection, 1, 0)))
+                yieldAll(comb.move(Delta(0, 0, shift), Delta(xDirection, 1, 0)))
             }
         }
 
@@ -89,10 +87,7 @@ class SculptorStrategy(val model: Model) : Strategy {
             }
         }
 
-        val delta = Coord.ZERO - comb.bots[0].pos
-
-        yieldAll(comb.normalMove(delta.dx, delta.dy))
-        yieldAll(comb.normalZMove(delta.dz))
+        yieldAll(comb.moveTo(Coord.ZERO))
 
         check(state.matrix == model.matrix)
 
@@ -148,9 +143,11 @@ class SculptorStrategy(val model: Model) : Strategy {
             }
         }
 
-        fun moveTo(target: Coord, blowOutDirection: Delta = Delta(1, 1, 0)): Sequence<State> = buildSequence {
-            val delta = target - bots[0].pos
+        fun moveTo(target: Coord, blowOutDirection: Delta = Delta(1, 1, 0)): Sequence<State> {
+            return move(target - bots[0].pos, blowOutDirection)
+        }
 
+        fun move(delta: Delta, blowOutDirection: Delta = Delta(1, 1, 0)): Sequence<State> = buildSequence {
             yieldAll(normalMove(delta.dx, delta.dy))
             if (size > 1) {
                 yieldAll(lateralMove(delta.dz, blowOutDirection))
@@ -196,7 +193,7 @@ class SculptorStrategy(val model: Model) : Strategy {
             }
 
             val blowOutDeltas = ArrayList<Delta>()
-            for (x in 0..bots.count()) {
+            for (x in 0..16) {
                 blowOutDeltas.add(Delta(x * blowOutDirection.dx, 0, 0))
             }
 

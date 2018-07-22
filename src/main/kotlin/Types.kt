@@ -73,6 +73,43 @@ data class Matrix(
     val to: Coord,
     val coordinates: ByteArray
 ) {
+    fun isGrounded(): Boolean {
+        val groundedMatrix = Matrix.zerosLike(this)
+        val (minCoords, maxCoords) = bbox()
+
+        val stack = Stack<Coord>()
+        for (x in minCoords.x..maxCoords.x) {
+            for (z in minCoords.z..maxCoords.z) {
+                if (this[x, 0, z]) {
+                    val coord = Coord(x, 0, z)
+                    stack.add(coord)
+                    groundedMatrix[coord] = true
+                }
+            }
+        }
+
+        while (stack.any()) {
+            val coord = stack.pop()
+
+            for (delta in DXDYDZ_MLEN1) {
+                val neighbor = coord + delta
+
+                if (neighbor.isInBounds(groundedMatrix) && !groundedMatrix[neighbor] && this[neighbor]) {
+                    stack.push(neighbor)
+                    groundedMatrix[neighbor] = true
+                }
+            }
+        }
+
+        forEach { x, y, z ->
+            if (this[x, y, z] && !groundedMatrix[x, y, z]) {
+                return false
+            }
+        }
+
+        return true
+    }
+
     /** All coords reachable from a given one via Void and 2-step SMove. */
     fun voidS2FillNeighborhood(coord: Coord): Sequence<Pair<Array<Command>, Coord>> {
         return DXDYDZ_MLEN1.asSequence().mapNotNull { delta ->
