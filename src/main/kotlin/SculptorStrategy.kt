@@ -7,7 +7,15 @@ class SculptorStrategy(val mode: Mode, val model: Model?, source: Model?) : Stra
     override val name: String = "sculptor"
     override val state: State = State.create(mode, model?.matrix, source?.matrix)
 
-    override fun run(): Sequence<State> = buildSequence {
+    override fun run(): Sequence<State> {
+        return when (mode) {
+            Mode.Assembly -> runAssembly()
+            Mode.Disassembly -> runDisassembly()
+            Mode.Reassembly -> TODO()
+        }
+    }
+
+    private fun runAssembly(): Sequence<State> = buildSequence {
         yield(state)
 
         /* Step 0 - fork bots */
@@ -96,9 +104,70 @@ class SculptorStrategy(val mode: Mode, val model: Model?, source: Model?) : Stra
         yield(state)
     }
 
+    private fun runDisassembly(): Sequence<State> = buildSequence {
+        yield(state)
+
+        /* Step 0 - fork bots */
+
+        val (minCoord, maxCoord) = state.matrix.bbox()
+        val maxCombSize = min(40, maxCoord.z - minCoord.z + 1)
+
+        val comb = Comb()
+        yieldAll(comb.moveTo(Coord(maxCoord.x + 1, 0, minCoord.z - 1)))
+        yieldAll(comb.move(Delta(0, 0, 1)))
+        yieldAll(comb.resize(maxCombSize))
+
+        /* Step 1 - build far wall */
+
+        while (comb.pos.y < maxCoord.y) {
+            yieldAll(comb.move(Delta(0, 1, 0)))
+            yieldAll(comb.fill(Delta(0, -1, 0)))
+        }
+        yieldAll(comb.move(Delta(0, 1, 0)))
+
+        /* Step 2 - build near wall */
+
+        yieldAll(comb.moveTo(Coord(minCoord.x - 1, comb.pos.y, minCoord.z)))
+        yieldAll(comb.moveTo(Coord(minCoord.x - 1, minCoord.y, minCoord.z)))
+
+        while (comb.pos.y < maxCoord.y) {
+            yieldAll(comb.move(Delta(0, 1, 0)))
+            yieldAll(comb.fill(Delta(0, -1, 0)))
+        }
+
+        /* Step 3 - disassemble */
+
+        var xDirection = 1
+        while (comb.pos.y > minCoord.y) {
+            for (x in minCoord.x - 1..maxCoord.x) {
+                yieldAll(comb.fill(Delta(xDirection, -1, 0)))
+                yieldAll(comb.void(Delta(xDirection, 0, 0)))
+                yieldAll(comb.move(Delta(xDirection, 0, 0)))
+            }
+            yieldAll(comb.void(Delta(0, -1, 0)))
+            yieldAll(comb.move(Delta(0, -1, 0)))
+            xDirection *= -1
+        }
+
+        for (x in minCoord.x - 1..maxCoord.x) {
+            yieldAll(comb.void(Delta(xDirection, 0, 0)))
+            yieldAll(comb.move(Delta(xDirection, 0, 0)))
+        }
+
+        /* Step 4 - tear down */
+
+        yieldAll(comb.resize(1))
+        yieldAll(comb.moveTo(Coord.ZERO))
+
+        check(state.matrix == state.targetMatrix)
+
+        yieldAll(comb.halt())
+    }
+
     inner class Comb {
         val bots: ArrayList<BotView> = ArrayList(listOf(state[1]!!))
 
+        val pos: Coord get() = bots[0].pos
         val size: Int get() = bots.count()
 
         fun resize(newSize: Int): Sequence<State> = buildSequence {
@@ -116,7 +185,7 @@ class SculptorStrategy(val mode: Mode, val model: Model?, source: Model?) : Stra
                 state.step()
                 yield(state)
 
-                // if we are still in the targetMatrix, we should fill it on resize
+                // if we are in the targetMatrix, we should fill it on resize
                 val pos = bots.last().pos + Delta(0, 0, 1)
                 if (state.targetMatrix[pos] && !state.matrix[pos]) {
                     bots.dropLast(1).forEach { b -> state.wait(b.id) }
@@ -125,6 +194,32 @@ class SculptorStrategy(val mode: Mode, val model: Model?, source: Model?) : Stra
                     yield(state)
                 }
             }
+        }
+
+        fun halt(): Sequence<State> = buildSequence {
+            state.halt(bots[0].id)
+            state.step()
+            yield(state)
+        }
+
+        fun fill(delta: Delta): Sequence<State> = buildSequence {
+            if (bots.all { b -> state.matrix[b.pos + delta] }) {
+                return@buildSequence
+            }
+
+            bots.forEach { b -> if (state.matrix[b.pos + delta]) state.wait(b.id) else state.fill(b.id, delta) }
+            state.step()
+            yield(state)
+        }
+
+        fun void(delta: Delta): Sequence<State> = buildSequence {
+            if (bots.all { b -> !state.matrix[b.pos + delta] }) {
+                return@buildSequence
+            }
+
+            bots.forEach { b -> if (!state.matrix[b.pos + delta]) state.wait(b.id) else state.void(b.id, delta) }
+            state.step()
+            yield(state)
         }
 
         fun moveSculpt(delta: Delta): Sequence<State> = buildSequence {
