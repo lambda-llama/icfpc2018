@@ -6,6 +6,7 @@ import java.io.File
 import java.math.RoundingMode
 import java.nio.ByteBuffer
 import java.util.*
+import kotlin.collections.ArrayList
 import kotlin.coroutines.experimental.buildSequence
 import kotlin.math.abs
 import kotlin.math.max
@@ -77,7 +78,7 @@ data class Matrix(
         val groundedMatrix = Matrix.zerosLike(this)
         val (minCoords, maxCoords) = bbox()
 
-        val stack = Stack<Coord>()
+        val stack = ArrayList<Coord>()
         for (x in minCoords.x..maxCoords.x) {
             for (z in minCoords.z..maxCoords.z) {
                 if (this[x, 0, z]) {
@@ -89,13 +90,13 @@ data class Matrix(
         }
 
         while (stack.any()) {
-            val coord = stack.pop()
+            val coord = stack.removeAt(stack.size - 1)
 
             for (delta in DXDYDZ_MLEN1) {
                 val neighbor = coord + delta
 
                 if (neighbor.isInBounds(groundedMatrix) && !groundedMatrix[neighbor] && this[neighbor]) {
-                    stack.push(neighbor)
+                    stack.add(neighbor)
                     groundedMatrix[neighbor] = true
                 }
             }
