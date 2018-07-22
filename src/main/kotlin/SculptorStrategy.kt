@@ -3,16 +3,16 @@ package io.github.lambdallama
 import kotlin.coroutines.experimental.buildSequence
 import kotlin.math.*
 
-class SculptorStrategy(val mode: Mode, val model: Model, source: Model?) : Strategy {
+class SculptorStrategy(val mode: Mode, val model: Model?, source: Model?) : Strategy {
     override val name: String = "sculptor"
-    override val state: State = State.create(mode, model.matrix, source?.matrix)
+    override val state: State = State.create(mode, model?.matrix, source?.matrix)
 
     override fun run(): Sequence<State> = buildSequence {
         yield(state)
 
         /* Step 0 - fork bots */
 
-        val (minCoord, maxCoord) = model.matrix.bbox()
+        val (minCoord, maxCoord) = state.targetMatrix.bbox()
         val maxCombSize = min(40, maxCoord.z - minCoord.z + 1)
 
         val comb = Comb()
@@ -80,7 +80,7 @@ class SculptorStrategy(val mode: Mode, val model: Model, source: Model?) : Strat
         if (comb.bots[0].pos.z > 0) {
             yieldAll(comb.normalZMove(-1))
             val oldPos = comb.bots[0].pos + Delta(0, 0, 1)
-            if (model.matrix[oldPos] && !state.matrix[oldPos]) {
+            if (state.targetMatrix[oldPos] && !state.matrix[oldPos]) {
                 state.fill(comb.bots[0].id, Delta(0, 0, 1))
                 state.step()
                 yield(state)
@@ -89,7 +89,7 @@ class SculptorStrategy(val mode: Mode, val model: Model, source: Model?) : Strat
 
         yieldAll(comb.moveTo(Coord.ZERO))
 
-        check(state.matrix == model.matrix)
+        check(state.matrix == state.targetMatrix)
 
         state.halt(comb.bots[0].id)
         state.step()
@@ -118,7 +118,7 @@ class SculptorStrategy(val mode: Mode, val model: Model, source: Model?) : Strat
 
                 // if we are still in the targetMatrix, we should fill it on resize
                 val pos = bots.last().pos + Delta(0, 0, 1)
-                if (model.matrix[pos] && !state.matrix[pos]) {
+                if (state.targetMatrix[pos] && !state.matrix[pos]) {
                     bots.dropLast(1).forEach { b -> state.wait(b.id) }
                     state.fill(bots.last().id, Delta(0, 0, 1))
                     state.step()
@@ -136,8 +136,8 @@ class SculptorStrategy(val mode: Mode, val model: Model, source: Model?) : Strat
             state.step()
             yield(state)
 
-            if (bots.any { b -> model.matrix[b.pos - delta] }) {
-                bots.forEach { b -> if (model.matrix[b.pos - delta]) state.fill(b.id, -delta) else state.wait(b.id) }
+            if (bots.any { b -> state.targetMatrix[b.pos - delta] }) {
+                bots.forEach { b -> if (state.targetMatrix[b.pos - delta]) state.fill(b.id, -delta) else state.wait(b.id) }
                 state.step()
                 yield(state)
             }
