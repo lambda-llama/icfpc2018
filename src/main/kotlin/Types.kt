@@ -12,8 +12,13 @@ import kotlin.math.abs
 import kotlin.math.max
 
 
-data class Coord(val x: Int, val y: Int, val z: Int) : Comparable<Coord> {
-    fun isInBounds(matrix: Matrix) = this in matrix.from..matrix.to
+data class Coord(val x: Int, val y: Int, val z: Int) {
+    fun isInBounds(matrix: Matrix) = isInBox(matrix.from to matrix.to)
+
+    fun isInBox(bb: Pair<Coord, Coord>) =
+            bb.first.x <= x && x <= bb.second.x &&
+                    bb.first.y <= y && y <= bb.second.y &&
+                    bb.first.z <= z && z <= bb.second.z
 
     operator fun plus(delta: Delta): Coord {
         return Coord(x + delta.dx, y + delta.dy, z + delta.dz)
@@ -27,12 +32,6 @@ data class Coord(val x: Int, val y: Int, val z: Int) : Comparable<Coord> {
         return Delta(x - coord.x, y - coord.y, z - coord.z)
     }
 
-    override fun compareTo(other: Coord): Int = ComparisonChain.start()
-        .compare(x, other.x)
-        .compare(y, other.y)
-        .compare(z, other.z)
-        .result()
-
     override fun toString(): String {
         return "($x,$y,$z)"
     }
@@ -42,7 +41,7 @@ data class Coord(val x: Int, val y: Int, val z: Int) : Comparable<Coord> {
     }
 }
 
-data class Delta(val dx: Int, val dy: Int, val dz: Int) : Comparable<Delta> {
+data class Delta(val dx: Int, val dy: Int, val dz: Int) {
     operator fun unaryMinus() = Delta(-dx, -dy, -dz)
 
     operator fun times(s: Int) = Delta(dx * s, dy * s, dz * s)
@@ -56,12 +55,6 @@ data class Delta(val dx: Int, val dy: Int, val dz: Int) : Comparable<Delta> {
     val isLongLinear: Boolean get() = isLinear && mlen <= 15
     val isNear: Boolean get() = mlen in 1..2 && clen == 1
     val isFar: Boolean get() = clen in 1..30
-
-    override fun compareTo(other: Delta): Int = ComparisonChain.start()
-        .compare(dx, other.dx)
-        .compare(dy, other.dy)
-        .compare(dz, other.dz)
-        .result()
 
     override fun toString(): String {
         return "<$dx,$dy,$dz>"

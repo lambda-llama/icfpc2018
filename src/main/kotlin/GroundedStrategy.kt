@@ -70,7 +70,7 @@ class GroundedStrategy(
                 check(model.matrix[toFill])
                 val testCoord = toFill + dxdydz
                 if (testCoord.isInBounds(model.matrix) &&
-                    testCoord in from..to &&
+                    testCoord.isInBox(from to to) &&
                     model.matrix[testCoord] &&
                     !state.matrix[testCoord]) {
                     grounded.add(testCoord)
