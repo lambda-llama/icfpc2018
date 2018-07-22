@@ -129,6 +129,7 @@ class State(
         check(fillPos.isInBounds(matrix))
 
         if (matrix[fillPos]) {
+            System.err.println("Filling filled at ${fillPos}, by bot #${id}")
             energy += 6
         } else {
             matrix[fillPos] = true
@@ -149,6 +150,7 @@ class State(
             matrix[voidPos] = false
             energy -= 12
         } else {
+            System.err.println("Voiding void at ${voidPos}, by bot #${id}")
             energy += 3
         }
         botCommands[id] = Void(delta)

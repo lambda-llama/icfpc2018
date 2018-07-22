@@ -342,9 +342,7 @@ class SculptorStrategy(val mode: Mode, val model: Model?, source: Model?) : Stra
 
         fun moveSculpt(delta: Delta): Sequence<State> = buildSequence {
             yieldAll(switchToHighIfNeeded(bots.map { it.pos + delta }))
-            bots.forEach { b -> state.void(b.id, delta) }
-            state.step()
-            yield(state)
+            yieldAll(void(delta))
 
             bots.forEach { b -> state.sMove(b.id, delta) }
             state.step()
