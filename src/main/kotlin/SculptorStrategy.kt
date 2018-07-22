@@ -13,7 +13,7 @@ class SculptorStrategy(val model: Model) : Strategy {
         /* Step 0 - fork bots */
 
         val (minCoord, maxCoord) = model.matrix.bbox()
-        val maxCombSize = min(16, maxCoord.z - minCoord.z + 1)
+        val maxCombSize = min(40, maxCoord.z - minCoord.z + 1)
 
         val comb = Comb()
         yieldAll(comb.moveTo(minCoord))
@@ -63,14 +63,16 @@ class SculptorStrategy(val model: Model) : Strategy {
                 xDirection *= -1
             }
 
-            // TODO: remove this hack?
-            for (y in 1..maxCoord.y - minCoord.y + 1) {
-                yieldAll(comb.moveSculpt(Delta(0, 1, 0)))
+            if (comb.bots[0].pos.z > minCoord.z) {
+                // TODO: remove this hack?
+                for (y in 1..maxCoord.y - minCoord.y + 1) {
+                    yieldAll(comb.moveSculpt(Delta(0, 1, 0)))
+                }
+                val shift = if (comb.bots[0].pos.z - comb.size < 0) -comb.bots[0].pos.z else -comb.size
+                yieldAll(comb.moveTo(
+                        comb.bots[0].pos + Delta(0, 0, shift),
+                        Delta(xDirection, 1, 0)))
             }
-            val shift = if (comb.bots[0].pos.z - comb.size < 0) -comb.bots[0].pos.z else -comb.size
-            yieldAll(comb.moveTo(
-                    comb.bots[0].pos + Delta(0, 0, shift),
-                    Delta(xDirection, 1, 0)))
         }
 
         /* Step 3 - tear down */
@@ -200,9 +202,13 @@ class SculptorStrategy(val model: Model) : Strategy {
 
             /* Blow out */
 
-            state.wait(bots[0].id)
-            for (i in 1 until bots.count()) {
-                state.sMove(bots[i].id, blowOutDeltas[i])
+            for (i in 0 until bots.count()) {
+                val batchIdx = i % 16
+                if (batchIdx == 0) {
+                    state.wait(bots[i].id)
+                } else {
+                    state.sMove(bots[i].id, blowOutDeltas[batchIdx])
+                }
             }
             state.step()
             yield(state)
@@ -220,9 +226,13 @@ class SculptorStrategy(val model: Model) : Strategy {
 
             /* Blow in */
 
-            state.wait(bots[0].id)
-            for (i in 1 until bots.count()) {
-                state.sMove(bots[i].id, -blowOutDeltas[i])
+            for (i in 0 until bots.count()) {
+                val batchIdx = i % 16
+                if (batchIdx == 0) {
+                    state.wait(bots[i].id)
+                } else {
+                    state.sMove(bots[i].id, -blowOutDeltas[batchIdx])
+                }
             }
             state.step()
             yield(state)

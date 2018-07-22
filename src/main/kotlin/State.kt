@@ -265,8 +265,9 @@ class State(
     companion object {
         fun forModel(model: Model): State {
             // TODO: use the model matrix?
-            val bots = Array<Bot?>(20 + 1) { null }
-            bots[1] = Bot(1, Coord.ZERO, (2..20).toSortedSet())
+            val botsCount = 40
+            val bots = Array<Bot?>(botsCount + 1) { null }
+            bots[1] = Bot(1, Coord.ZERO, (2..botsCount).toSortedSet())
             return State(model, Matrix.zerosLike(model.matrix), bots)
         }
     }
