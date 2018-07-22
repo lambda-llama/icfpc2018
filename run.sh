@@ -1,0 +1,2 @@
+echo "$@"
+ARGS="$@" ./gradlew :run
