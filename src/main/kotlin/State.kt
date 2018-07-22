@@ -231,6 +231,10 @@ class State(
 
         expectedBotActionsThisStep = bots.count { it != null }
 
+        if (botCommands.values.all { c -> c == Wait }) {
+            System.err.println("WARNING: all bots are waiting")
+        }
+
         if (traceListeners.isNotEmpty()) {
             val commands = botCommands.toSortedMap()
             for (listener in traceListeners) {
