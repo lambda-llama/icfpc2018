@@ -91,7 +91,7 @@ fun io.github.lambdallama.State.toVisModel(): Model {
 
     /* Highlighting */
 
-    val highlight: List<Coord> = listOf()
+    val highlight: List<Coord> = listOf(Coord(9,11,14), Coord(10,11,14))
     val hiFb = FaceBuffer()
     highlight.forEach { pos ->
         addBlock(hiFb, matrix, ChunkBlockSide.ALL, pos.x, pos.y, pos.z)

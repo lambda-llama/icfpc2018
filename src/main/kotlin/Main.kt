@@ -6,6 +6,7 @@ import com.google.common.base.Stopwatch
 import io.github.lambdallama.vis.VoxelEngine
 import java.io.DataOutputStream
 import java.io.File
+import java.nio.file.Paths
 import java.util.concurrent.TimeUnit
 import java.util.*
 import kotlin.concurrent.thread
@@ -69,7 +70,14 @@ private fun createStrategy(mode: Mode, modelFilePath: String, traceFilePath: Str
     val strategy = when (mode) {
         Mode.Assembly -> getStrategy(mode, model, null, args)
         Mode.Disassembly -> getStrategy(mode, null, model, args)
-        Mode.Reassembly -> TODO()
+        Mode.Reassembly -> {
+            val src = modelFilePath.replace("_tgt", "_src")
+            val tgt = modelFilePath.replace("_src", "_tgt")
+            val srcModel = Model.parse(File(src))
+            val tgtModel = Model.parse(File(tgt))
+
+            getStrategy(mode, tgtModel, srcModel, args)
+        }
     }
     strategy.state.addTraceListener(TraceWriter(traceOutputStream))
     return strategy

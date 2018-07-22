@@ -11,7 +11,7 @@ class SculptorStrategy(val mode: Mode, val model: Model?, source: Model?) : Stra
         return when (mode) {
             Mode.Assembly -> runAssembly()
             Mode.Disassembly -> runDisassembly()
-            Mode.Reassembly -> TODO()
+            Mode.Reassembly -> runReassembly()
         }
     }
 
@@ -43,6 +43,99 @@ class SculptorStrategy(val mode: Mode, val model: Model?, source: Model?) : Stra
                     }
                 }
                 xDirection *= -1
+            }
+
+            if (z + comb.size <= maxCoord.z) {
+                val shift = comb.size
+                if (comb.bots.last().pos.z + comb.size >= state.matrix.R) {
+                    yieldAll(comb.resize(state.matrix.R - comb.bots.last().pos.z - 1))
+                }
+                yieldAll(comb.lateralMove(shift, Delta(xDirection, 1, 0)))
+                yieldAll(comb.normalMove(0, minCoord.y - maxCoord.y - 1))
+
+                totalZShifts += 1
+            }
+        }
+
+        /* Step 2 - sculpt the box, leaving the correctly filled targetMatrix */
+
+        yieldAll(comb.lateralMove(comb.size - maxCombSize, Delta(xDirection, 1, 0)))
+        yieldAll(comb.resize(maxCombSize))
+
+        for (iz in 1..totalZShifts) {
+            for (y in minCoord.y..maxCoord.y) {
+                yieldAll(comb.moveSculpt(Delta(0, -1, 0)))
+                for (x in minCoord.x..maxCoord.x) {
+                    yieldAll(comb.moveSculpt(Delta(xDirection, 0, 0)))
+                }
+                xDirection *= -1
+            }
+
+            if (comb.bots[0].pos.z > minCoord.z) {
+                // TODO: remove this hack?
+                for (y in 1..maxCoord.y - minCoord.y + 1) {
+                    yieldAll(comb.moveSculpt(Delta(0, 1, 0)))
+                }
+                val shift = if (comb.bots[0].pos.z - comb.size < 0) -comb.bots[0].pos.z else -comb.size
+                yieldAll(comb.move(Delta(0, 0, shift), Delta(xDirection, 1, 0)))
+            }
+        }
+
+        /* Step 3 - tear down */
+
+        yieldAll(comb.resize(1))
+
+        if (comb.bots[0].pos.z > 0) {
+            yieldAll(comb.normalZMove(-1))
+            val oldPos = comb.bots[0].pos + Delta(0, 0, 1)
+            if (state.targetMatrix[oldPos] && !state.matrix[oldPos]) {
+                state.fill(comb.bots[0].id, Delta(0, 0, 1))
+                state.step()
+                yield(state)
+            }
+        }
+
+        yieldAll(comb.moveTo(Coord.ZERO))
+
+        check(state.matrix == state.targetMatrix)
+
+        state.halt(comb.bots[0].id)
+        state.step()
+        yield(state)
+    }
+
+    private fun runReassembly(): Sequence<State> = buildSequence {
+        yield(state)
+
+        /* Step 0 - fork bots */
+
+        val (minCoord, maxCoord) = bbUnion(
+                state.matrix.bbox(),
+                state.targetMatrix.bbox()
+        )
+        val maxCombSize = min(40, maxCoord.z - minCoord.z + 1)
+
+        val comb = Comb()
+        yieldAll(comb.moveTo(minCoord.copy(x = minCoord.x - 1)))
+        yieldAll(comb.resize(maxCombSize))
+
+        /* Step 1 - fill the bounding box, erasing old stuff */
+
+        var xDirection = 1
+        var totalZShifts = 1
+        for (z in minCoord.z..maxCoord.z step comb.size) {
+            for (y in minCoord.y..maxCoord.y) {
+                yieldAll(comb.erasingMove(Delta(xDirection, 0, 0)))
+                for (x in minCoord.x..maxCoord.x) {
+                    yield(state)
+//                    if (x != maxCoord.x) {
+                    yieldAll(comb.erasingMove(Delta(xDirection, 0, 0)))
+//                    }
+                    comb.bots.forEach { b -> state.fill(b.id, Delta(-xDirection, 0, 0)) }
+                    state.step()
+                }
+                xDirection *= -1
+                yieldAll(comb.normalMove(0, 1))
             }
 
             if (z + comb.size <= maxCoord.z) {
@@ -271,6 +364,18 @@ class SculptorStrategy(val mode: Mode, val model: Model?, source: Model?) : Stra
             }
         }
 
+        fun erasingMove(delta: Delta): Sequence<State> = buildSequence {
+            require(delta.mlen == 1)
+            if (bots.any { b -> state.matrix[b.pos + delta] }) {
+                bots.forEach { b -> if (state.matrix[b.pos + delta]) state.void(b.id, delta) else state.wait(b.id) }
+                state.step()
+                yield(state)
+            }
+            bots.forEach { b -> state.sMove(b.id, delta) }
+            state.step()
+            yield(state)
+        }
+
         fun normalZMove(dz: Int): Sequence<State> = buildSequence {
             var dz = dz
             while (dz != 0) {
@@ -391,3 +496,15 @@ fun criticalBeams(m: Matrix): Set<Beam> {
 
     return beams.filter { isCritical(it) }.toSet()
 }
+
+
+fun bbUnion(bb1: Pair<Coord, Coord>, bb2: Pair<Coord, Coord>): Pair<Coord, Coord> =
+        Coord(
+                min(bb1.first.x, bb2.first.x),
+                min(bb1.first.y, bb2.first.y),
+                min(bb1.first.z, bb2.first.z)
+        ) to Coord(
+                max(bb1.second.x, bb2.second.x),
+                max(bb1.second.y, bb2.second.y),
+                max(bb1.second.z, bb2.second.z)
+        )
