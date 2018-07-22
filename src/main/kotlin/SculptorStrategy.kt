@@ -7,7 +7,8 @@ class SculptorStrategy(val mode: Mode, val model: Model?, source: Model?) : Stra
     override val name: String = "sculptor"
     override val state: State = State.create(mode, model?.matrix, source?.matrix)
 
-    private val cBeams = model?.matrix?.let { criticalBeams(it) }.orEmpty()
+//    private val cBeams = model?.matrix?.let { criticalBeams(it) }.orEmpty()
+    private val cBeams = emptyList<Beam>()
 
     override fun run(): Sequence<State> {
         return when (mode) {
@@ -485,22 +486,26 @@ val DeltasDown = arrayOf(
 fun criticalBeams(m: Matrix): Set<Beam> {
     val bb = m.bbox()
     fun isCritical(b: Beam): Boolean {
-
-        val cache = HashMap<Coord, WalkState>()
+        val cache = HashSet<Coord>()
         fun hasLowerGround(c: Coord): Boolean {
-            if (b.contains(c) || !c.isInBounds(m) || !m[c]) return false
-            if (c.y <= b.y) return true
-            return when (cache[c]) {
-                WalkState.InProgress -> false
-                WalkState.HasLowerGround -> true
-                WalkState.LowerGroundUnreachable -> false
-                null -> {
-                    cache[c] = WalkState.InProgress
-                    val res = Matrix.DXDYDZ_MLEN1.any { d -> hasLowerGround(c + d) }
-                    cache[c] = if (res) WalkState.HasLowerGround else WalkState.LowerGroundUnreachable
-                    res
+            val work = mutableSetOf(c)
+            val done = mutableSetOf<Coord>()
+            while (work.isNotEmpty()) {
+                val c = work.minBy { it.y }!!
+                work.remove(c)
+                done.add(c)
+                if (b.contains(c) || !c.isInBounds(m) || !m[c]) continue
+                if (c in cache || c.y <= b.y) {
+                    done.forEach { cache.add(it) }
+                    work.forEach { cache.add(it) }
+                    return true
                 }
+                Matrix.DXDYDZ_MLEN1
+                        .map {c + it}
+                        .filter { it !in work && it !in done }
+                        .forEach { work.add(it) }
             }
+            return false
         }
 
         val coordsAbove = (bb.first.z..bb.second.z)

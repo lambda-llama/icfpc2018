@@ -2,6 +2,8 @@ package io.github.lambdallama
 
 import java.util.*
 
+class NotGroundedException: RuntimeException()
+
 class State(
         val targetMatrix: Matrix,
         val matrix: Matrix,
