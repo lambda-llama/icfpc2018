@@ -65,7 +65,7 @@ class SculptorStrategy(val model: Model) : Strategy {
 
         /* Step 1 - fill the bounding box */
 
-        val (minCoord, maxCoord) = model.bbox
+        val (minCoord, maxCoord) = model.matrix.bbox()
         yieldAll(moveTo(bots, minCoord))
 
         var xDirection = 1
@@ -99,9 +99,20 @@ class SculptorStrategy(val model: Model) : Strategy {
                 }
                 xDirection *= -1
             }
-            yieldAll(moveTo(bots,
-                    bots[0].pos + Delta(0, maxCoord.y - minCoord.y + 1, -bots.count()),
-                    Delta(xDirection, 1, 0)))
+            // TODO: remove this hack
+            if (true) {
+                for (y in 1..maxCoord.y - minCoord.y + 1) {
+                    yieldAll(moveSculpt(bots, Delta(0, 1, 0)))
+                }
+                val shift = if (bots[0].pos.z - bots.count() < 0) -bots[0].pos.z else -bots.count()
+                yieldAll(moveTo(bots,
+                        bots[0].pos + Delta(0, 0, shift),
+                        Delta(xDirection, 1, 0)))
+            } else {
+                yieldAll(moveTo(bots,
+                        bots[0].pos + Delta(0, maxCoord.y - minCoord.y + 1, -bots.count()),
+                        Delta(xDirection, 1, 0)))
+            }
         }
 
         /* Step 3 - tear down */
@@ -129,18 +140,17 @@ class SculptorStrategy(val model: Model) : Strategy {
         state.step()
         yield(state)
 
-        yieldAll(moveTo(listOf(bot1), Coord.ZERO))
+        val lastBot = listOf(bot1)
+        val delta = Coord.ZERO - bot1.pos
+
+        yieldAll(normalMove(lastBot, delta.dx, delta.dy))
+        yieldAll(normalZMove(lastBot, delta.dz))
+
+        check(state.matrix == model.matrix)
 
         state.halt(bot1.id)
         state.step()
         yield(state)
-    }
-
-    private fun moveTo(bots: List<BotView>, target: Coord, blowOutDirection: Delta = Delta(1, 1, 0)): Sequence<State> = buildSequence {
-        val delta = target - bots[0].pos
-
-        yieldAll(normalMove(bots, delta.dx, delta.dy))
-        yieldAll(lateralMove(bots, delta.dz, blowOutDirection))
     }
 
     private fun moveDestroy(bots: List<BotView>, delta: Delta): Sequence<State> = buildSequence {
@@ -157,6 +167,13 @@ class SculptorStrategy(val model: Model) : Strategy {
         bots.forEach { b -> if (model.matrix[b.pos - delta]) state.fill(b.id, -delta) else state.wait(b.id) }
         state.step()
         yield(state)
+    }
+
+    private fun moveTo(bots: List<BotView>, target: Coord, blowOutDirection: Delta = Delta(1, 1, 0)): Sequence<State> = buildSequence {
+        val delta = target - bots[0].pos
+
+        yieldAll(normalMove(bots, delta.dx, delta.dy))
+        yieldAll(lateralMove(bots, delta.dz, blowOutDirection))
     }
 
     private fun normalMove(bots: List<BotView>, dx: Int, dy: Int): Sequence<State> = buildSequence {
@@ -179,15 +196,28 @@ class SculptorStrategy(val model: Model) : Strategy {
         }
     }
 
+    private fun normalZMove(bots: List<BotView>, dz: Int): Sequence<State> = buildSequence {
+        var dz = dz
+        while (dz != 0) {
+            val shift = dz.sign * min(abs(dz), 15)
+            bots.forEach { b -> state.sMove(b.id, Delta(0, 0, shift)) }
+            state.step()
+            yield(state)
+            dz -= shift
+        }
+    }
+
     private fun lateralMove(bots: List<BotView>, dz: Int, blowOutDirection: Delta): Sequence<State> = buildSequence {
         if (dz == 0) {
             return@buildSequence
         }
 
         val n = sqrt(bots.count().toDouble()).toInt()
+        val ny = min( n, state.matrix.R - bots[0].pos.y - 1)
+        val nx = if (ny == 0) bots.count() else (bots.count() + ny - 1) / ny
         val blowOutDeltas = ArrayList<Pair<Delta, Delta>>()
-        for (x in 0..n) {
-            for (y in 0..n) {
+        for (x in 0..nx) {
+            for (y in 0..ny) {
                 blowOutDeltas.add(
                         Delta(x * blowOutDirection.dx, 0, 0)
                                 to Delta(0, y * blowOutDirection.dy, 0))

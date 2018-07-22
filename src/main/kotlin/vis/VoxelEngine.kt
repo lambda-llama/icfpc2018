@@ -40,10 +40,10 @@ class VoxelEngine(
     override fun create() {
         modelBatch = ModelBatch()
 
-        camera = PerspectiveCamera(67f, Gdx.graphics.width.toFloat(), Gdx.graphics.height.toFloat())
+        camera = PerspectiveCamera(50f, Gdx.graphics.width.toFloat(), Gdx.graphics.height.toFloat())
                 .apply {
-                    position.set(10f, 10f, 10f)
-                    lookAt(0f, 0f, 0f)
+                    position.set(-25f, 12f, -25f)
+                    lookAt(-5f, 0f, -5f)
                     near = 1f
                     far = 300f
                 }

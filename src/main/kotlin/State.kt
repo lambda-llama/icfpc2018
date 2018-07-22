@@ -91,9 +91,9 @@ class State(
         val newPos = oldPos + delta
 
 //        volatile[oldPos, newPos] = true
-        assert(matrix.isVoidRegion(oldPos, newPos))
+        check(matrix.isVoidRegion(oldPos, newPos))
         check(!matrix[newPos])
-        assert(newPos.isInBounds(matrix)) { "out of bounds: $newPos" }
+        check(newPos.isInBounds(matrix)) { "out of bounds: $newPos" }
 
         bot.pos = newPos
         energy += 2 * delta.mlen
@@ -107,11 +107,11 @@ class State(
         val oldPos = bot.pos
         val midPos = oldPos + delta0
         val newPos = midPos + delta1
-        assert(midPos.isInBounds(matrix)) { "out of bounds: $midPos" }
-        assert(newPos.isInBounds(matrix)) { "out of bounds: $newPos" }
+        check(midPos.isInBounds(matrix)) { "out of bounds: $midPos" }
+        check(newPos.isInBounds(matrix)) { "out of bounds: $newPos" }
 
-        assert(matrix.isVoidRegion(oldPos, midPos))
-        assert(matrix.isVoidRegion(midPos, newPos))
+        check(matrix.isVoidRegion(oldPos, midPos))
+        check(matrix.isVoidRegion(midPos, newPos))
 //        volatile[oldPos, midPos] = true
 //        volatile[midPos, newPos] = true
 
@@ -124,7 +124,7 @@ class State(
         require(delta.isNear)
         val bot = checkNotNull(bots[id])
         val fillPos = bot.pos + delta
-        assert(fillPos.isInBounds(matrix))
+        check(fillPos.isInBounds(matrix))
 
         if (matrix[fillPos]) {
             energy += 6
@@ -141,7 +141,7 @@ class State(
         check(delta.isNear)
         val bot = checkNotNull(bots[id])
         val voidPos = bot.pos + delta
-        assert(voidPos.isInBounds(matrix))
+        check(voidPos.isInBounds(matrix))
 
         if (matrix[voidPos]) {
             matrix[voidPos] = false

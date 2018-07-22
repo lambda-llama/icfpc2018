@@ -23,7 +23,7 @@ fun getStrategy(args: List<String>, model: Model): Strategy {
 }
 
 fun main(args: Array<String>) {
-    var args = (System.getenv("ARGS") ?: "layered").split(" ").toList()
+    var args = (System.getenv("ARGS") ?: "grounded").split(" ").toList()
     when {
         args[0] == "batch" -> {
             val batchFilePath = args[1]
@@ -41,7 +41,7 @@ fun main(args: Array<String>) {
             args = args.drop(2)
             runNonInteractive(modelFilePath, traceFilePath, args)
         }
-        else -> runInteractive("problemsF/FA011_tgt.mdl", "out.nbt", listOf("grounded"))
+        else -> runInteractive("problemsF/FA044_tgt.mdl", "out.nbt", args)
     }
 }
 
