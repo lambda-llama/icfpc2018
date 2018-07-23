@@ -102,17 +102,13 @@ fun multiSLMove(initial: State, id: Int, target: Coord): Sequence<State> {
     }
 }
 
-fun sweep(
+inline fun sweepFill(
     state: State,
-    model: Model,
+    crossinline shouldFill: (Coord) -> Boolean,
     id: Int,
     minCoord: Coord,
     maxCoord: Coord
 ) = buildSequence {
-    state.flip(id)
-    state.step()
-    yield(state)
-
     val b = state[id]!!
     var x = minCoord.x
     var dx = 1
@@ -127,11 +123,55 @@ fun sweep(
                 val bPos = b.pos
                 val delta = coord - bPos
                 state.sMove(id, delta)
-                state.step()
                 yield(state)
-                if (model.matrix[bPos]) {
+                if (shouldFill(bPos)) {
                     state.fill(id, -delta)
-                    state.step()
+                    yield(state)
+                }
+                z += dz
+            }
+            x += dx
+
+            z -= dz  // go back.
+            dz = -dz
+        }
+
+        x -= dx  // go back.
+        dx = -dx
+    }
+}
+
+inline fun sweepVoid(
+    state: State,
+    crossinline shouldVoid: (Coord) -> Boolean,
+    id: Int,
+    minCoord: Coord,
+    maxCoord: Coord
+) = buildSequence {
+    val b = state[id]!!
+    var x = minCoord.x
+    var dx = 1
+    var z = minCoord.z
+    var dz = 1
+    for (y in minCoord.y..maxCoord.y) {
+        val targetX = if (dx > 0) maxCoord.x else minCoord.x
+        while (x != targetX + dx) {
+            val targetZ = if (dz > 0) maxCoord.z else minCoord.z
+            while (z != targetZ + dz) {
+                if (state.harmonics == Harmonics.Low) {
+                    state.flip(id)
+                    yield(state)
+                }
+
+                val coord = Coord(x, y, z)
+                val bPos = b.pos
+                val delta = coord - bPos
+                state.void(id, delta)
+                yield(state)
+                state.sMove(id, delta)
+                yield(state)
+                if (!shouldVoid(bPos)) {
+                    state.fill(id, -delta)
                     yield(state)
                 }
                 z += dz
@@ -146,9 +186,10 @@ fun sweep(
         dx = -dx
     }
 
-    state.flip(id)
-    state.step()
-    yield(state)
+    if (state.harmonics == Harmonics.High) {
+        state.flip(id)
+        yield(state)
+    }
 }
 
 class Baseline(
@@ -169,8 +210,20 @@ class Baseline(
         val id = 1
         yieldAll(multiSLMove(state, id, minCoord + initialDelta))
 
-        sweep(state, model, id, minCoord, maxCoord)
-        //check(state.matrix == targetMatrix.matrix)
+        state.flip(id)
+        state.step()
+        yield(state)
+
+        for (ignore in sweepFill(state, model.matrix::get, id, minCoord, maxCoord)) {
+            state.step()
+            yield(state)
+        }
+
+        state.flip(id)
+        state.step()
+        yield(state)
+
+        check(state.matrix == state.targetMatrix)
 
         yieldAll(multiSLMove(state, id, Coord.ZERO))
         state.halt(id)

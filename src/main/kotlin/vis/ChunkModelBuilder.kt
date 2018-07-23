@@ -13,7 +13,6 @@ import com.badlogic.gdx.math.Vector3
 import io.github.lambdallama.Coord
 import io.github.lambdallama.Harmonics
 import io.github.lambdallama.Matrix
-import io.github.lambdallama.criticalBeams
 
 private const val blockSize = .5f
 private const val halfSize = blockSize * 0.5f
@@ -24,18 +23,18 @@ fun io.github.lambdallama.State.toVisModel(): Model {
 
     /* Bounds */
 
-    builder.node()
-
-    val boundsMeshBuilder = builder.part(
-            "target",
-            GL20.GL_LINE_STRIP,
-            (VertexAttributes.Usage.Position or VertexAttributes.Usage.Normal).toLong(),
-            Material(ColorAttribute.createDiffuse(Color.GREEN))
-    )
-
-    val fbBounds = FaceBuffer()
-    addBlock(fbBounds, ChunkBlockSide.ALL, Vector3(), targetMatrix.R * blockSize)
-    fbBounds.addMeshFromBuffers(boundsMeshBuilder)
+//    builder.node()
+//
+//    val boundsMeshBuilder = builder.part(
+//            "target",
+//            GL20.GL_LINE_STRIP,
+//            (VertexAttributes.Usage.Position or VertexAttributes.Usage.Normal).toLong(),
+//            Material(ColorAttribute.createDiffuse(Color.GREEN))
+//    )
+//
+//    val fbBounds = FaceBuffer()
+//    addBlock(fbBounds, ChunkBlockSide.ALL, Vector3(), targetMatrix.R * blockSize)
+//    fbBounds.addMeshFromBuffers(boundsMeshBuilder)
 
     /* Wireframe target */
 
@@ -80,7 +79,7 @@ fun io.github.lambdallama.State.toVisModel(): Model {
             GL20.GL_TRIANGLES,
             (VertexAttributes.Usage.Position or VertexAttributes.Usage.Normal).toLong(),
             Material(ColorAttribute.createDiffuse(
-                    if (harmonics == Harmonics.High) Color.VIOLET else Color.SKY))
+                    if (harmonics == Harmonics.High) Color.FIREBRICK else Color.SKY))
     )
 
     val fbBot = FaceBuffer()
@@ -91,7 +90,10 @@ fun io.github.lambdallama.State.toVisModel(): Model {
 
     /* Highlighting */
 
-    val highlight: List<Coord> = listOf()
+    val highlight = ArrayList<Coord>()
+//    matrix.forEach { x, y, z ->  if (x == 13 + 1 || x == 25 + 1) { highlight.add(Coord(x, y, z)) }}
+
+
     val hiFb = FaceBuffer()
     highlight.forEach { pos ->
         addBlock(hiFb, matrix, ChunkBlockSide.ALL, pos.x, pos.y, pos.z)

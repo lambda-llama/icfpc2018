@@ -24,7 +24,7 @@ class GroundedStrategy(
         yield(state)
 
         val bot = state[1]!!
-        for (ignore in fillAll(bot)) {
+        for (ignore in fillAll(bot.id)) {
             state.step()
             yield(state)
         }
@@ -38,11 +38,14 @@ class GroundedStrategy(
     }
 
     fun fillAll(
-        bot: BotView,
+        id: Int,
+        initial: Set<Coord> = emptySet(),
         from: Coord = model.matrix.from,
         to: Coord = model.matrix.to
     ): Sequence<State> = buildSequence {
-        val grounded = HashSet<Coord>()
+        val bot = state[id]!!
+
+        val grounded = HashSet<Coord>(initial)
         for (x in from.x..to.x) {
             for (z in from.z..to.z) {
                 val coord = Coord(x, 0, z)

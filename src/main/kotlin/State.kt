@@ -11,7 +11,7 @@ class State(
 //    private val volatile: Matrix = Matrix.zerosLike(matrix),
         harmonics: Harmonics = Harmonics.Low,
         energy: Long = 0,
-        private var expectedBotActionsThisStep: Int = bots.count { it != null }
+        expectedBotActionsThisStep: Int = bots.count { it != null }
 ) {
     private val traceListeners: ArrayList<TraceListener> = ArrayList()
 
@@ -19,6 +19,8 @@ class State(
     var harmonics: Harmonics = harmonics
         private set
     var energy: Long = energy
+        private set
+    var expectedBotActionsThisStep: Int = expectedBotActionsThisStep
         private set
 
     /* Private methods */
@@ -225,7 +227,9 @@ class State(
     }
 
     fun step() {
-        check(botCommands.count() == expectedBotActionsThisStep)
+        check(botCommands.count() == expectedBotActionsThisStep) {
+            "$botCommands is not of size $expectedBotActionsThisStep"
+        }
         // VERY EXPENSIVE CHECK
 //         check(harmonics == Harmonics.High || matrix.isGrounded())
 
