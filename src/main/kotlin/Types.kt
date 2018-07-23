@@ -13,6 +13,8 @@ import kotlin.math.max
 
 
 data class Coord(val x: Int, val y: Int, val z: Int) {
+    fun asDelta(): Delta = Delta(x, y, z)
+
     fun isInBounds(matrix: Matrix) = isInBox(matrix.from to matrix.to)
 
     fun isInBox(bb: Pair<Coord, Coord>) =
@@ -44,6 +46,14 @@ data class Coord(val x: Int, val y: Int, val z: Int) {
 data class Delta(val dx: Int, val dy: Int, val dz: Int) {
     operator fun unaryMinus() = Delta(-dx, -dy, -dz)
 
+    operator fun plus(delta: Delta): Delta {
+        return Delta(dx + delta.dx, dy + delta.dy, dz + delta.dz)
+    }
+
+    operator fun minus(delta: Delta): Delta {
+        return this + (-delta)
+    }
+
     operator fun times(s: Int) = Delta(dx * s, dy * s, dz * s)
 
     val mlen: Int get() = abs(dx) + abs(dy) + abs(dz)
@@ -55,6 +65,8 @@ data class Delta(val dx: Int, val dy: Int, val dz: Int) {
     val isLongLinear: Boolean get() = isLinear && mlen <= 15
     val isNear: Boolean get() = mlen in 1..2 && clen == 1
     val isFar: Boolean get() = clen in 1..30
+
+    val isZero: Boolean get() = dx == 0 && dy == 0 && dz == 0
 
     override fun toString(): String {
         return "<$dx,$dy,$dz>"

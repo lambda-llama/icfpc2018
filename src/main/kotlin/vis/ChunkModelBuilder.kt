@@ -21,8 +21,8 @@ fun io.github.lambdallama.State.toVisModel(): Model {
     val builder = ModelBuilder()
     builder.begin()
 
-    /* Bounds */
-
+//    /* Bounds */
+//
 //    builder.node()
 //
 //    val boundsMeshBuilder = builder.part(
@@ -138,8 +138,8 @@ fun io.github.lambdallama.State.floorModel(): Model {
 }
 
 private class FaceBuffer {
-    private val vertexBuffer: FloatArray = FloatArray(16 * 16 * 16 * 3 * 2 * 8 * 2 * 10)
-    private val indexBuffer: ShortArray = ShortArray(1337 * 8 * 8 * 10)
+    private val vertexBuffer: FloatArray = FloatArray(10 * 16 * 16 * 16 * 3 * 2 * 8 * 2 * 10)
+    private val indexBuffer: ShortArray = ShortArray(10 * 1337 * 8 * 8 * 10)
     private var vertexBufferPosition = 0
     private var indexBufferPosition = 0
     private var nVerts = 0

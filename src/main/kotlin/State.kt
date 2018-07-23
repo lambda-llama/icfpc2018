@@ -207,9 +207,42 @@ class State(
         TODO()
     }
 
-    fun gFillBox(id0: Int, i1: Int, i2: Int, i3: Int, i4: Int, i5: Int, i6: Int, i7: Int,
-                 d0: Delta, d1: Delta, d2: Delta, d3: Delta, d4: Delta, d5: Delta, d6: Delta, d7: Delta) {
-        TODO()
+    fun gFillBox(id0: Int, d0: Delta, id1: Int, d1: Delta, id2: Int, d2: Delta, id3: Int, d3: Delta,
+                 id4: Int, d4: Delta, id5: Int, d5: Delta, id6: Int, d6: Delta, id7: Int, d7: Delta) {
+        val bots = listOf(id0, id1, id2, id3, id4, id5, id6, id7).map { id -> checkNotNull(bots[id]) }
+        val deltas = listOf(d0, d1, d2, d3, d4, d5, d6, d7)
+        check(deltas.all { d -> d.isNear })
+        val coords = bots.zip(deltas).map { (b, d) -> b.pos + d }
+        val minCoord = coords.minBy { c -> c.x + c.y + c.z }!!
+        val maxCoord = coords.maxBy { c -> c.x + c.y + c.z }!!
+        val corners = HashSet<Coord>()
+        for (x in sequenceOf(minCoord.x, maxCoord.x)) {
+            for (y in sequenceOf(minCoord.y, maxCoord.y)) {
+                for (z in sequenceOf(minCoord.z, maxCoord.z)) {
+                    corners.add(Coord(x, y, z))
+                }
+            }
+        }
+        check(corners.containsAll(coords))
+        for ((bot, pair) in bots.zip(deltas.zip(coords))) {
+            val (delta, coord) = pair
+            val farCoord = Coord(
+                    if (coord.x == minCoord.x) maxCoord.x else minCoord.x,
+                    if (coord.y == minCoord.y) maxCoord.y else minCoord.y,
+                    if (coord.z == minCoord.z) maxCoord.z else minCoord.z)
+            val farDelta = farCoord - coord
+            check(farDelta.isFar)
+            botCommands[bot.id] = GFill(delta, farDelta)
+        }
+
+        matrix.forEach(from = minCoord, to = maxCoord) { x, y, z ->
+            if (!matrix[x, y, z]) {
+                matrix[x, y, z] = true
+                energy += 12
+            } else {
+                energy += 6
+            }
+        }
     }
 
     fun gVoidLine(id0: Int, i1: Int, d0: Delta, d1: Delta) {
@@ -253,6 +286,9 @@ class State(
         }
 
         botCommands.clear()
+        for (bot in bots.filterNotNull()) {
+            botCommands[bot.id] = Wait
+        }
     }
 
     override fun equals(other: Any?): Boolean {
