@@ -50,25 +50,37 @@ class SculptorStrategy(val mode: Mode, val model: Model?, source: Model?) : Stra
 
         filler.digMode = true
 
+        // We will be stepping two less than box size to avoid leaving ungrounded move traces
+
+        val correctingLength = 2
+        val xSteps =
+                ((maxCoord.x - minCoord.x + 1) - correctingLength).toFloat() /
+                        (filler.boxSize.x - correctingLength)
+        val ySteps =
+                ((maxCoord.y - minCoord.y + 1) - correctingLength).toFloat() /
+                        (filler.boxSize.y - correctingLength)
+        val zSteps =
+                ((maxCoord.z - minCoord.z + 1) - correctingLength).toFloat() /
+                        (filler.boxSize.z - correctingLength)
         var yDirection = 1
         var zDirection = 1
-        for (x in minCoord.x .. maxCoord.x step filler.boxSize.x) {
-            for (y in minCoord.y .. maxCoord.y step filler.boxSize.y) {
-                for (z in minCoord.z .. maxCoord.z step filler.boxSize.z) {
+        for (x in 1..ceil(xSteps).toInt()) {
+            for (y in 1..ceil(ySteps).toInt()) {
+                for (z in 1..ceil(zSteps).toInt()) {
                     yieldAll(filler.fillBox())
-                    val shift = min(filler.boxSize.z, if (zDirection > 0)
+                    val shift = min(filler.boxSize.z - correctingLength, if (zDirection > 0)
                         (maxCoord.z - filler.boxMaxCoord.z) else
                         (filler.boxMinCoord.z - minCoord.z))
                     yieldAll(filler.move(Delta(0, 0, zDirection * shift)))
                 }
                 yieldAll(filler.fillBox())
-                val shift = min(filler.boxSize.y, if (yDirection > 0)
+                val shift = min(filler.boxSize.y - correctingLength, if (yDirection > 0)
                     (maxCoord.y - filler.boxMaxCoord.y) else
                     (filler.boxMinCoord.y - minCoord.y))
                 yieldAll(filler.move(Delta(0, yDirection * shift, 0)))
                 zDirection *= -1
             }
-            val shift = min(filler.boxSize.x, maxCoord.x - filler.boxMaxCoord.x)
+            val shift = min(filler.boxSize.x - correctingLength, maxCoord.x - filler.boxMaxCoord.x)
             yieldAll(filler.move(Delta(shift, 0, 0)))
             yDirection *= -1
         }
